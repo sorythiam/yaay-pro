@@ -402,11 +402,46 @@ function DashboardHome({ profile, setView, openPatientDossier }) {
 
   useEffect(() => {
     if (!profile?.id) return
-    const channel = supabase.channel('pro-' + profile.id)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'alerts' }, () => { loadActiveAlerts(); loadStats() })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'consents' }, () => { loadMyPatients(); loadStats() })
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
+
+    // Polling de secours toutes les 10 secondes pour rattraper les événements ratés
+    const pollInterval = setInterval(() => {
+      loadMyPatients()
+      loadStats()
+      loadActiveAlerts()
+    }, 10000)
+
+    const channel = supabase.channel('pro-changes-' + profile.id)
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'alerts' },
+        (payload) => {
+          console.log('Realtime alerts:', payload)
+          loadActiveAlerts()
+          loadStats()
+        }
+      )
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'consents', filter: `granted_to=eq.${profile.id}` },
+        (payload) => {
+          console.log('Realtime consents:', payload)
+          loadMyPatients()
+          loadStats()
+        }
+      )
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'consent_requests', filter: `requested_by=eq.${profile.id}` },
+        (payload) => {
+          console.log('Realtime consent_requests:', payload)
+          loadMyPatients()
+        }
+      )
+      .subscribe((status) => {
+        console.log('Realtime status:', status)
+      })
+
+    return () => {
+      clearInterval(pollInterval)
+      supabase.removeChannel(channel)
+    }
   }, [profile?.id])
 
   async function loadActiveAlerts() {
