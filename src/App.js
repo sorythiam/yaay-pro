@@ -1116,17 +1116,58 @@ function NewPregnancyView({ profile, patientId, setView }) {
 // =====================================================
 // NEW CPN VIEW
 // =====================================================
+// =====================================================
+// NEW CPN VIEW - VERSION COMPLÈTE
+// À remplacer dans votre App.js de Yaay Pro
+// =====================================================
+
 function NewCPNView({ profile, pregnancyId, patientId, setView }) {
   const [pregnancy, setPregnancy] = useState(null)
   const [patient, setPatient] = useState(null)
+  const [lastCPN, setLastCPN] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+
+  // Constantes
   const [weight, setWeight] = useState('')
   const [bpSys, setBpSys] = useState('')
   const [bpDia, setBpDia] = useState('')
   const [uh, setUh] = useState('')
   const [bcf, setBcf] = useState('')
+  const [temperature, setTemperature] = useState('')
+
+  // Examens biologiques (cochés si réalisés)
+  const [examsRealized, setExamsRealized] = useState({
+    groupage: false,
+    vih: false,
+    syphilis: false,
+    hepatiteB: false,
+    glycemie: false,
+    nfs: false,
+    ecbu: false,
+    albumineSucre: false,
+    toxoplasmose: false,
+  })
+
+  // Médicaments
+  const [medications, setMedications] = useState({
+    ferFolate: false,
+    sp: false,
+    calcium: false,
+    vat: false,
+  })
+
+  // Symptômes/signes de danger
+  const [symptoms, setSymptoms] = useState({
+    saignements: false,
+    cephalees: false,
+    troublesVisuels: false,
+    oedemes: false,
+    fievre: false,
+    diminutionMaf: false,
+  })
+
   const [observations, setObservations] = useState('')
   const [nextDate, setNextDate] = useState('')
 
@@ -1137,67 +1178,379 @@ function NewCPNView({ profile, pregnancyId, patientId, setView }) {
     setPatient(p)
     const { data: preg } = await supabase.from('pregnancies').select('*').eq('id', pregnancyId).single()
     setPregnancy(preg)
+
+    // Récupérer la dernière CPN pour comparaison
+    const { data: cpns } = await supabase.from('consultations')
+      .select('*')
+      .eq('pregnancy_id', pregnancyId)
+      .order('consultation_date', { ascending: false })
+      .limit(1)
+    if (cpns && cpns.length > 0) {
+      setLastCPN(cpns[0])
+    }
+
+    // Date du prochain RDV par défaut (28 jours)
     const next = new Date()
     next.setDate(next.getDate() + 28)
     setNextDate(next.toISOString().split('T')[0])
     setLoading(false)
   }
 
+  // Calculs et alertes
   const tensionAlert = (parseInt(bpSys) >= 14 || parseInt(bpDia) >= 9) && bpSys && bpDia
+  const tensionAlertSevere = (parseInt(bpSys) >= 16 || parseInt(bpDia) >= 11) && bpSys && bpDia
+  const fevreAlert = parseFloat(temperature) >= 38 && temperature
+  const weightDelta = lastCPN?.weight_kg && weight ? (parseFloat(weight) - lastCPN.weight_kg).toFixed(1) : null
+
+  // Pré-éclampsie : HTA + au moins 1 symptôme
+  const preeclampsiaSigns = tensionAlert && (symptoms.cephalees || symptoms.troublesVisuels || symptoms.oedemes)
+
+  // Au moins un signe de danger
+  const dangerSigns = Object.values(symptoms).some(v => v)
 
   async function handleSave() {
     setSaving(true)
+    setError(null)
+
     const weeks = pregnancy ? Math.floor((new Date() - new Date(pregnancy.last_period_date)) / (1000 * 60 * 60 * 24 * 7)) : null
+
     try {
+      // 1. Construire les observations enrichies
+      let fullObservations = observations || ''
+
+      const examsList = Object.entries(examsRealized).filter(([_, v]) => v).map(([k]) => k)
+      if (examsList.length > 0) {
+        fullObservations += `\n\nExamens réalisés : ${examsList.join(', ')}`
+      }
+
+      const medsList = Object.entries(medications).filter(([_, v]) => v).map(([k]) => k)
+      if (medsList.length > 0) {
+        fullObservations += `\n\nMédicaments : ${medsList.join(', ')}`
+      }
+
+      const symptomsList = Object.entries(symptoms).filter(([_, v]) => v).map(([k]) => k)
+      if (symptomsList.length > 0) {
+        fullObservations += `\n\n⚠️ Signes/symptômes : ${symptomsList.join(', ')}`
+      }
+
+      // 2. Insérer la consultation
       const { error: insertError } = await supabase.from('consultations').insert({
-        pregnancy_id: pregnancyId, performed_by: profile.id, structure_id: profile.structure_id,
-        consultation_date: new Date().toISOString(), gestational_age_weeks: weeks,
+        pregnancy_id: pregnancyId,
+        performed_by: profile.id,
+        structure_id: profile.structure_id,
+        consultation_date: new Date().toISOString(),
+        gestational_age_weeks: weeks,
         weight_kg: weight ? parseFloat(weight) : null,
         blood_pressure_systolic: bpSys ? parseInt(bpSys) : null,
         blood_pressure_diastolic: bpDia ? parseInt(bpDia) : null,
         uterine_height_cm: uh ? parseFloat(uh) : null,
         fetal_heart_rate: bcf ? parseInt(bcf) : null,
-        observations: observations || null,
+        temperature_celsius: temperature ? parseFloat(temperature) : null,
+        observations: fullObservations.trim() || null,
         next_appointment_date: nextDate || null,
-        validated: true, validated_at: new Date().toISOString()
+        validated: true,
+        validated_at: new Date().toISOString()
       })
+
       if (insertError) throw insertError
-      if (tensionAlert) await supabase.from('pregnancies').update({ current_risk_level: 'eleve' }).eq('id', pregnancyId)
-      if (nextDate) await supabase.from('appointments').insert({ pregnancy_id: pregnancyId, structure_id: profile.structure_id, appointment_date: new Date(nextDate).toISOString(), type: 'cpn', status: 'planifie' })
+
+      // 3. Mettre à jour le niveau de risque selon les alertes
+      let newRiskLevel = pregnancy?.current_risk_level || 'faible'
+      if (tensionAlertSevere || preeclampsiaSigns) newRiskLevel = 'tres_eleve'
+      else if (tensionAlert || dangerSigns) newRiskLevel = 'eleve'
+      else if (fevreAlert) newRiskLevel = 'modere'
+
+      if (newRiskLevel !== pregnancy?.current_risk_level) {
+        await supabase.from('pregnancies')
+          .update({ current_risk_level: newRiskLevel })
+          .eq('id', pregnancyId)
+      }
+
+      // 4. Créer le prochain RDV
+      if (nextDate) {
+        await supabase.from('appointments').insert({
+          pregnancy_id: pregnancyId,
+          structure_id: profile.structure_id,
+          appointment_date: new Date(nextDate).toISOString(),
+          type: 'cpn',
+          status: 'planifie'
+        })
+      }
+
       setView({ name: 'patient', data: patientId })
-    } catch (err) { setError(err.message); setSaving(false) }
+    } catch (err) {
+      setError(err.message)
+      setSaving(false)
+    }
   }
 
   if (loading) return <LoadingScreen/>
+
+  const weeks = pregnancy ? Math.floor((new Date() - new Date(pregnancy.last_period_date)) / (1000 * 60 * 60 * 24 * 7)) : null
+  const age = patient?.date_of_birth ? Math.floor((new Date() - new Date(patient.date_of_birth)) / (1000 * 60 * 60 * 24 * 365.25)) : null
+
+  // Liste des antécédents pour le bandeau
+  const antecedents = []
+  if (pregnancy?.has_hypertension) antecedents.push({ label: 'HTA', severity: 'high' })
+  if (pregnancy?.has_diabetes) antecedents.push({ label: 'Diabète', severity: 'high' })
+  if (pregnancy?.has_hiv) antecedents.push({ label: 'VIH', severity: 'medium' })
+  if (pregnancy?.has_sickle_cell) antecedents.push({ label: 'Drépanocytose', severity: 'high' })
+  if (pregnancy?.has_previous_csection) antecedents.push({ label: 'Antécédent césarienne', severity: 'medium' })
+  if (pregnancy?.has_previous_hemorrhage) antecedents.push({ label: 'Antécédent HPP', severity: 'high' })
+  if (pregnancy?.has_previous_preeclampsia) antecedents.push({ label: 'Pré-éclampsie ant.', severity: 'high' })
 
   return (
     <div style={pageStyle}>
       <header style={headerStyle}>
         <button onClick={() => setView({ name: 'patient', data: patientId })} style={backButtonStyle}>✕ Annuler</button>
         <div style={{ flex: 1, marginLeft: 16 }}>
-          <div style={{ fontSize: 20, fontWeight: 700, fontFamily: 'Georgia, serif' }}>Nouvelle CPN · {patient?.first_name} {patient?.last_name}</div>
-        </div>
-        <button onClick={handleSave} disabled={saving} style={{ padding: '12px 20px', background: 'linear-gradient(135deg, #2D5F5D 0%, #1F4341 100%)', color: '#FAF6F0', borderRadius: 12, fontSize: 13, fontWeight: 700, border: 'none', cursor: saving ? 'wait' : 'pointer', fontFamily: 'inherit', opacity: saving ? 0.6 : 1 }}>{saving ? '...' : '💾 Valider'}</button>
-      </header>
-      <main style={{ padding: '24px 32px', maxWidth: 900, margin: '0 auto' }}>
-        {error && <div style={{ padding: 14, background: '#FFE8E2', borderRadius: 12, color: '#8B2E26', marginBottom: 16 }}>⚠️ {error}</div>}
-        <div style={cardStyle}>
-          <div style={{ fontSize: 18, fontWeight: 600, fontFamily: 'Georgia, serif', marginBottom: 20 }}>Constantes</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <div><label style={labelStyle}>Poids (kg)</label><input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} style={inputStyle}/></div>
-            <div>
-              <label style={labelStyle}>Tension</label>
-              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                <input type="number" value={bpSys} onChange={(e) => setBpSys(e.target.value)} placeholder="11" style={{...inputStyle, textAlign: 'center', borderColor: tensionAlert ? '#C44536' : 'rgba(42,24,16,0.08)'}}/>
-                <span style={{padding: 12, fontSize: 17, fontWeight: 700}}>/</span>
-                <input type="number" value={bpDia} onChange={(e) => setBpDia(e.target.value)} placeholder="7" style={{...inputStyle, textAlign: 'center', borderColor: tensionAlert ? '#C44536' : 'rgba(42,24,16,0.08)'}}/>
-              </div>
-            </div>
-            <div><label style={labelStyle}>HU (cm)</label><input type="number" value={uh} onChange={(e) => setUh(e.target.value)} style={inputStyle}/></div>
-            <div><label style={labelStyle}>BCF (bpm)</label><input type="number" value={bcf} onChange={(e) => setBcf(e.target.value)} style={inputStyle}/></div>
+          <div style={{ fontSize: 20, fontWeight: 700, fontFamily: 'Georgia, serif' }}>
+            Nouvelle CPN · {patient?.first_name} {patient?.last_name}
           </div>
-          <div style={{ marginTop: 20 }}><label style={labelStyle}>Observations</label><textarea value={observations} onChange={(e) => setObservations(e.target.value)} rows={4} style={{...inputStyle, resize: 'vertical'}}/></div>
-          <div style={{ marginTop: 16 }}><label style={labelStyle}>Prochain RDV</label><input type="date" value={nextDate} onChange={(e) => setNextDate(e.target.value)} style={inputStyle}/></div>
+          <div style={{ fontSize: 11, color: '#8B6F5C', display: 'flex', gap: 10, marginTop: 2 }}>
+            <span style={{ fontFamily: 'monospace' }}>{patient?.ipu}</span>
+            {age && <span>· {age} ans</span>}
+            {pregnancy && <span>· G{pregnancy.gravidity}P{pregnancy.parity}</span>}
+            {weeks && <span>· S{weeks}</span>}
+          </div>
+        </div>
+        <button onClick={handleSave} disabled={saving} style={{
+          padding: '12px 20px',
+          background: 'linear-gradient(135deg, #2D5F5D 0%, #1F4341 100%)',
+          color: '#FAF6F0', borderRadius: 12, fontSize: 13, fontWeight: 700,
+          border: 'none', cursor: saving ? 'wait' : 'pointer', fontFamily: 'inherit',
+          opacity: saving ? 0.6 : 1
+        }}>{saving ? '...' : '💾 Valider la CPN'}</button>
+      </header>
+
+      <main style={{ padding: '24px 32px', maxWidth: 1100, margin: '0 auto' }}>
+        {error && (
+          <div style={{ padding: 14, background: '#FFE8E2', borderRadius: 12, color: '#8B2E26', marginBottom: 16 }}>
+            ⚠️ {error}
+          </div>
+        )}
+
+        {/* BANDEAU ANTÉCÉDENTS - Toujours visible */}
+        {antecedents.length > 0 && (
+          <div style={{
+            padding: 14,
+            background: 'linear-gradient(135deg, #FFE8E2 0%, #F4E4C1 100%)',
+            border: '1px solid rgba(196,69,54,0.3)',
+            borderRadius: 14, marginBottom: 16
+          }}>
+            <div style={{ fontSize: 11, color: '#8B2E26', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8 }}>
+              ⚠️ Antécédents à surveiller
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {antecedents.map((a, i) => (
+                <div key={i} style={{
+                  padding: '6px 12px',
+                  background: a.severity === 'high' ? '#C44536' : '#D4A574',
+                  color: '#FAF6F0',
+                  borderRadius: 8, fontSize: 12, fontWeight: 600
+                }}>{a.label}</div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* DERNIÈRE CPN - Pour comparaison */}
+        {lastCPN && (
+          <div style={{
+            padding: 14,
+            background: '#F5F1EB',
+            borderRadius: 14, marginBottom: 16,
+            display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap'
+          }}>
+            <div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+              📊 Dernière CPN ({new Date(lastCPN.consultation_date).toLocaleDateString('fr-FR')})
+            </div>
+            {lastCPN.weight_kg && <div style={{ fontSize: 12 }}>Poids: <strong>{lastCPN.weight_kg} kg</strong></div>}
+            {lastCPN.blood_pressure_systolic && <div style={{ fontSize: 12 }}>TA: <strong>{lastCPN.blood_pressure_systolic}/{lastCPN.blood_pressure_diastolic}</strong></div>}
+            {lastCPN.uterine_height_cm && <div style={{ fontSize: 12 }}>HU: <strong>{lastCPN.uterine_height_cm} cm</strong></div>}
+            {lastCPN.fetal_heart_rate && <div style={{ fontSize: 12 }}>BCF: <strong>{lastCPN.fetal_heart_rate}</strong></div>}
+          </div>
+        )}
+
+        {/* SECTION 1 - CONSTANTES */}
+        <div style={cardStyle}>
+          <div style={{ fontSize: 18, fontWeight: 600, fontFamily: 'Georgia, serif', marginBottom: 4 }}>1. Constantes</div>
+          <div style={{ fontSize: 12, color: '#8B6F5C', marginBottom: 16 }}>Mesures cliniques du jour</div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+            <div>
+              <label style={labelStyle}>Poids (kg)</label>
+              <input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="65.5" style={inputStyle}/>
+              {weightDelta !== null && (
+                <div style={{ fontSize: 10, color: parseFloat(weightDelta) > 2 ? '#C44536' : '#5D4037', marginTop: 4, fontWeight: 600 }}>
+                  {parseFloat(weightDelta) > 0 ? '+' : ''}{weightDelta} kg vs dernière CPN
+                </div>
+              )}
+            </div>
+            <div>
+              <label style={labelStyle}>Tension artérielle</label>
+              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                <input type="number" value={bpSys} onChange={(e) => setBpSys(e.target.value)} placeholder="11" style={{...inputStyle, textAlign: 'center', borderColor: tensionAlertSevere ? '#C44536' : tensionAlert ? '#D4A574' : 'rgba(42,24,16,0.08)', borderWidth: tensionAlert ? '2px' : '2px'}}/>
+                <span style={{padding: 12, fontSize: 17, fontWeight: 700}}>/</span>
+                <input type="number" value={bpDia} onChange={(e) => setBpDia(e.target.value)} placeholder="7" style={{...inputStyle, textAlign: 'center', borderColor: tensionAlertSevere ? '#C44536' : tensionAlert ? '#D4A574' : 'rgba(42,24,16,0.08)'}}/>
+              </div>
+              {tensionAlertSevere ? (
+                <div style={{fontSize: 10, color: '#C44536', marginTop: 4, fontWeight: 700}}>
+                  🚨 HTA SÉVÈRE - Référer immédiatement
+                </div>
+              ) : tensionAlert ? (
+                <div style={{fontSize: 10, color: '#8B2E26', marginTop: 4, fontWeight: 600}}>
+                  ⚠ HTA gravidique
+                </div>
+              ) : null}
+            </div>
+            <div>
+              <label style={labelStyle}>Température (°C)</label>
+              <input type="number" step="0.1" value={temperature} onChange={(e) => setTemperature(e.target.value)} placeholder="36.8" style={{...inputStyle, borderColor: fevreAlert ? '#C44536' : 'rgba(42,24,16,0.08)'}}/>
+              {fevreAlert && <div style={{fontSize: 10, color: '#C44536', marginTop: 4, fontWeight: 600}}>⚠ Fièvre - Investiguer</div>}
+            </div>
+            <div>
+              <label style={labelStyle}>Hauteur utérine (cm)</label>
+              <input type="number" step="0.5" value={uh} onChange={(e) => setUh(e.target.value)} placeholder="28" style={inputStyle}/>
+              {weeks && uh && Math.abs(parseFloat(uh) - weeks) > 4 && (
+                <div style={{fontSize: 10, color: '#8B2E26', marginTop: 4, fontWeight: 600}}>
+                  ⚠ HU/SA discordant ({weeks} SA attendu ≈ {weeks} cm)
+                </div>
+              )}
+            </div>
+            <div>
+              <label style={labelStyle}>BCF (bpm)</label>
+              <input type="number" value={bcf} onChange={(e) => setBcf(e.target.value)} placeholder="140" style={{...inputStyle, borderColor: bcf && (parseInt(bcf) < 110 || parseInt(bcf) > 160) ? '#C44536' : 'rgba(42,24,16,0.08)'}}/>
+              {bcf && (parseInt(bcf) < 110 || parseInt(bcf) > 160) && (
+                <div style={{fontSize: 10, color: '#C44536', marginTop: 4, fontWeight: 600}}>
+                  🚨 BCF anormal (110-160 bpm normal)
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* SECTION 2 - SYMPTÔMES / SIGNES DE DANGER */}
+        <div style={{...cardStyle, marginTop: 16}}>
+          <div style={{ fontSize: 18, fontWeight: 600, fontFamily: 'Georgia, serif', marginBottom: 4 }}>2. Signes & symptômes</div>
+          <div style={{ fontSize: 12, color: '#8B6F5C', marginBottom: 16 }}>Cocher si la patiente présente l'un de ces signes</div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <CheckboxField label="Saignements" checked={symptoms.saignements} onChange={(v) => setSymptoms({...symptoms, saignements: v})}/>
+            <CheckboxField label="Céphalées sévères" checked={symptoms.cephalees} onChange={(v) => setSymptoms({...symptoms, cephalees: v})}/>
+            <CheckboxField label="Troubles visuels" checked={symptoms.troublesVisuels} onChange={(v) => setSymptoms({...symptoms, troublesVisuels: v})}/>
+            <CheckboxField label="Œdèmes" checked={symptoms.oedemes} onChange={(v) => setSymptoms({...symptoms, oedemes: v})}/>
+            <CheckboxField label="Fièvre" checked={symptoms.fievre} onChange={(v) => setSymptoms({...symptoms, fievre: v})}/>
+            <CheckboxField label="Diminution MAF" checked={symptoms.diminutionMaf} onChange={(v) => setSymptoms({...symptoms, diminutionMaf: v})}/>
+          </div>
+
+          {preeclampsiaSigns && (
+            <div style={{
+              marginTop: 14, padding: 12,
+              background: '#C44536', color: '#FAF6F0',
+              borderRadius: 10, fontSize: 13, fontWeight: 700
+            }}>
+              🚨 SUSPICION PRÉ-ÉCLAMPSIE — HTA + symptôme. Référer en urgence vers structure de niveau supérieur.
+            </div>
+          )}
+        </div>
+
+        {/* SECTION 3 - EXAMENS BIOLOGIQUES */}
+        <div style={{...cardStyle, marginTop: 16}}>
+          <div style={{ fontSize: 18, fontWeight: 600, fontFamily: 'Georgia, serif', marginBottom: 4 }}>3. Examens biologiques</div>
+          <div style={{ fontSize: 12, color: '#8B6F5C', marginBottom: 16 }}>Cocher les examens réalisés ou prescrits aujourd'hui</div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+            <CheckboxField label="Groupage Rhésus" checked={examsRealized.groupage} onChange={(v) => setExamsRealized({...examsRealized, groupage: v})}/>
+            <CheckboxField label="Sérologie VIH" checked={examsRealized.vih} onChange={(v) => setExamsRealized({...examsRealized, vih: v})}/>
+            <CheckboxField label="Syphilis (TPHA)" checked={examsRealized.syphilis} onChange={(v) => setExamsRealized({...examsRealized, syphilis: v})}/>
+            <CheckboxField label="Hépatite B" checked={examsRealized.hepatiteB} onChange={(v) => setExamsRealized({...examsRealized, hepatiteB: v})}/>
+            <CheckboxField label="Toxoplasmose" checked={examsRealized.toxoplasmose} onChange={(v) => setExamsRealized({...examsRealized, toxoplasmose: v})}/>
+            <CheckboxField label="Glycémie" checked={examsRealized.glycemie} onChange={(v) => setExamsRealized({...examsRealized, glycemie: v})}/>
+            <CheckboxField label="NFS / Hémogramme" checked={examsRealized.nfs} onChange={(v) => setExamsRealized({...examsRealized, nfs: v})}/>
+            <CheckboxField label="ECBU" checked={examsRealized.ecbu} onChange={(v) => setExamsRealized({...examsRealized, ecbu: v})}/>
+            <CheckboxField label="Albumine/Sucre" checked={examsRealized.albumineSucre} onChange={(v) => setExamsRealized({...examsRealized, albumineSucre: v})}/>
+          </div>
+        </div>
+
+        {/* SECTION 4 - MÉDICAMENTS */}
+        <div style={{...cardStyle, marginTop: 16}}>
+          <div style={{ fontSize: 18, fontWeight: 600, fontFamily: 'Georgia, serif', marginBottom: 4 }}>4. Médicaments & prophylaxie</div>
+          <div style={{ fontSize: 12, color: '#8B6F5C', marginBottom: 16 }}>Médicaments donnés ou prescrits aujourd'hui</div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <CheckboxField label="Fer + Acide folique" checked={medications.ferFolate} onChange={(v) => setMedications({...medications, ferFolate: v})}/>
+            <CheckboxField label="SP (paludisme)" checked={medications.sp} onChange={(v) => setMedications({...medications, sp: v})}/>
+            <CheckboxField label="Calcium" checked={medications.calcium} onChange={(v) => setMedications({...medications, calcium: v})}/>
+            <CheckboxField label="VAT (vaccin antitétanique)" checked={medications.vat} onChange={(v) => setMedications({...medications, vat: v})}/>
+          </div>
+        </div>
+
+        {/* SECTION 5 - OBSERVATIONS LIBRES */}
+        <div style={{...cardStyle, marginTop: 16}}>
+          <div style={{ fontSize: 18, fontWeight: 600, fontFamily: 'Georgia, serif', marginBottom: 16 }}>5. Observations</div>
+          <textarea
+            value={observations}
+            onChange={(e) => setObservations(e.target.value)}
+            rows={4}
+            placeholder="Notes cliniques, conseils donnés, plan de soins..."
+            style={{...inputStyle, resize: 'vertical', fontFamily: 'inherit'}}
+          />
+        </div>
+
+        {/* SECTION 6 - PROCHAIN RDV */}
+        <div style={{...cardStyle, marginTop: 16}}>
+          <div style={{ fontSize: 18, fontWeight: 600, fontFamily: 'Georgia, serif', marginBottom: 16 }}>6. Prochain rendez-vous</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, alignItems: 'flex-end' }}>
+            <div>
+              <label style={labelStyle}>Date prochaine CPN</label>
+              <input type="date" value={nextDate} onChange={(e) => setNextDate(e.target.value)} style={inputStyle}/>
+            </div>
+            <div style={{ fontSize: 11, color: '#8B6F5C', padding: 12 }}>
+              💡 Suggéré : 28 jours (S{weeks ? weeks + 4 : '—'}). Pour grossesses à risque, raccourcir à 14 jours.
+            </div>
+          </div>
+        </div>
+
+        {/* RÉCAPITULATIF DES ALERTES */}
+        {(tensionAlert || dangerSigns || fevreAlert) && (
+          <div style={{
+            marginTop: 16, padding: 16,
+            background: 'linear-gradient(135deg, #FFE8E2 0%, #FAF6F0 100%)',
+            border: '2px solid #C44536',
+            borderRadius: 14
+          }}>
+            <div style={{ fontSize: 13, color: '#8B2E26', fontWeight: 700, marginBottom: 8 }}>
+              🚨 Cette CPN déclenchera des alertes dans le dossier
+            </div>
+            <ul style={{ fontSize: 12, color: '#5D4037', margin: 0, paddingLeft: 20 }}>
+              {tensionAlertSevere && <li><strong>HTA sévère</strong> — Référence URGENTE recommandée</li>}
+              {tensionAlert && !tensionAlertSevere && <li>HTA gravidique modérée — surveillance renforcée</li>}
+              {preeclampsiaSigns && <li><strong>Suspicion pré-éclampsie</strong> — bilan + référence</li>}
+              {fevreAlert && <li>Fièvre — investiguer cause infectieuse</li>}
+              {dangerSigns && <li>Signes de danger déclarés — adapter prise en charge</li>}
+            </ul>
+            <div style={{ fontSize: 11, color: '#5D4037', marginTop: 8, fontStyle: 'italic' }}>
+              Le niveau de risque de la grossesse sera automatiquement mis à jour.
+            </div>
+          </div>
+        )}
+
+        {/* BOUTONS BAS */}
+        <div style={{ marginTop: 24, display: 'flex', gap: 10 }}>
+          <button onClick={() => setView({ name: 'patient', data: patientId })} style={{
+            flex: 1, padding: 14, background: '#F5F1EB', color: '#5D4037',
+            borderRadius: 14, fontSize: 14, fontWeight: 700,
+            border: 'none', cursor: 'pointer', fontFamily: 'inherit'
+          }}>Annuler</button>
+          <button onClick={handleSave} disabled={saving} style={{
+            flex: 2, padding: 14,
+            background: 'linear-gradient(135deg, #2D5F5D 0%, #1F4341 100%)',
+            color: '#FAF6F0', borderRadius: 14, fontSize: 14, fontWeight: 700,
+            border: 'none', cursor: saving ? 'wait' : 'pointer',
+            boxShadow: '0 6px 16px rgba(45,95,93,0.3)', fontFamily: 'inherit',
+            opacity: saving ? 0.6 : 1
+          }}>{saving ? 'Enregistrement...' : '💾 Valider la CPN'}</button>
         </div>
       </main>
     </div>
