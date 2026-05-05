@@ -421,17 +421,40 @@ function DashboardHome({ profile, setView, openPatientDossier }) {
   }
 
   async function loadMyPatients() {
-    const { data } = await supabase.from('consents')
-      .select(`woman:profiles!consents_woman_id_fkey(
-        id, first_name, last_name, ipu, phone,
-        pregnancies(id, status, last_period_date, expected_delivery_date, current_risk_level)
-      )`)
-      .eq('granted_to', profile.id).eq('status', 'accorde').eq('scope', 'lecture_dossier').limit(50)
-    if (data) {
-      const unique = {}
-      data.forEach(c => { if (c.woman) unique[c.woman.id] = c.woman })
-      setMyPatients(Object.values(unique))
-    }
+    // Étape 1 : récupérer les woman_id avec consentement
+    const { data: consents, error: e1 } = await supabase
+      .from('consents')
+      .select('woman_id')
+      .eq('granted_to', profile.id)
+      .eq('status', 'accorde')
+      .eq('scope', 'lecture_dossier')
+  
+    if (e1) { console.error('loadMyPatients consents error:', e1); return }
+    if (!consents || consents.length === 0) { setMyPatients([]); return }
+  
+    const uniqueIds = [...new Set(consents.map(c => c.woman_id))]
+  
+    // Étape 2 : charger les profils
+    const { data: patients, error: e2 } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, ipu, phone')
+      .in('id', uniqueIds)
+  
+    if (e2) { console.error('loadMyPatients patients error:', e2); return }
+  
+    // Étape 3 : charger les grossesses pour chaque patiente
+    const { data: pregnancies } = await supabase
+      .from('pregnancies')
+      .select('id, woman_id, status, last_period_date, expected_delivery_date, current_risk_level')
+      .in('woman_id', uniqueIds)
+  
+    // Combiner profils + grossesses
+    const patientsWithPregs = (patients || []).map(p => ({
+      ...p,
+      pregnancies: (pregnancies || []).filter(pr => pr.woman_id === p.id)
+    }))
+  
+    setMyPatients(patientsWithPregs)
   }
 
   async function loadStats() {
