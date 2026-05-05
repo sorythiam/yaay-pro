@@ -2,219 +2,13 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 
 // =====================================================
-// CONTENU PÉDAGOGIQUE — Conseils par semaine de grossesse
-// =====================================================
-const adviceContent = {
-  // T1 : 1-13 SA
-  t1: {
-    nutrition: [
-      { icon: '🥬', title: 'Acide folique', text: 'Mangez du moringa frais (gnigne), des feuilles de manioc, et des légumes verts. Essentiels pour le développement du système nerveux du bébé.' },
-      { icon: '🐟', title: 'Poisson local frais', text: 'Préférez le yaboy, le tiof ou la sole grillés. Évitez le poisson cru (sushi) et fumé en grande quantité.' },
-      { icon: '🥤', title: 'Hydratation', text: 'Buvez 2 litres d\'eau par jour. Les jus de bissap ou bouye non sucrés sont excellents.' },
-      { icon: '🚫', title: 'À éviter', text: 'Café fort, kinkéliba en excès, viande peu cuite, fromages au lait cru, alcool (bissap fermenté).' }
-    ],
-    physical: [
-      { icon: '🚶🏾‍♀️', title: 'Marche douce', text: 'Marchez 20-30 minutes par jour, tôt le matin (avant 9h) ou en fin de journée pour éviter la chaleur.' },
-      { icon: '😴', title: 'Repos', text: 'Dormez 8-9 heures par nuit. Évitez de dormir sur le dos après 16 SA — préférez le côté gauche.' },
-      { icon: '🌡️', title: 'Chaleur & climat', text: 'Restez à l\'ombre entre 12h et 16h. Portez du coton léger, évitez le synthétique. Hydratez-vous régulièrement.' }
-    ],
-    warnings: 'Au T1, les nausées matinales sont normales. Mangez par petites quantités. Consultez votre sage-femme si vomissements fréquents.'
-  },
-  // T2 : 14-27 SA
-  t2: {
-    nutrition: [
-      { icon: '🥜', title: 'Niébé et lentilles', text: 'Riches en fer et protéines. Le mafé bien mijoté ou le ndambé sont excellents (avec modération de l\'huile).' },
-      { icon: '🥛', title: 'Calcium', text: 'Lait caillé (sow), yaourt local, sardines en conserve avec arêtes. Important pour les os du bébé.' },
-      { icon: '🍠', title: 'Patate douce & manioc', text: 'Excellents glucides. Préférez bouillis ou en bouillie plutôt que frits.' },
-      { icon: '🍊', title: 'Vitamine C', text: 'Mangues, oranges, papayes, jujubes. Aide à absorber le fer.' },
-      { icon: '⚠️', title: 'Modération', text: 'Limitez le sel (risque hypertension), le sucre raffiné (diabète gestationnel), la friture.' }
-    ],
-    physical: [
-      { icon: '🧘🏾‍♀️', title: 'Étirements doux', text: 'Étirements du dos pour les douleurs lombaires. Évitez les abdominaux classiques.' },
-      { icon: '👟', title: 'Marche modérée', text: '30-45 minutes par jour. Bonnes chaussures (évitez les talons). Lieu ombragé.' },
-      { icon: '🏊🏾‍♀️', title: 'Natation', text: 'Excellent pour soulager le poids. Si vous avez accès à une piscine, 2-3 fois/semaine.' },
-      { icon: '🛏️', title: 'Position de sommeil', text: 'Dormez sur le côté gauche avec un coussin entre les jambes. Améliore la circulation vers le bébé.' }
-    ],
-    warnings: 'Surveillez votre tension. En cas de céphalées sévères, troubles visuels ou œdèmes importants, consultez immédiatement.'
-  },
-  // T3 : 28+ SA
-  t3: {
-    nutrition: [
-      { icon: '🍚', title: 'Énergie progressive', text: 'Préférez le riz complet, le mil, le couscous de fonio. 5-6 petits repas par jour plutôt que 3 gros.' },
-      { icon: '🐟', title: 'Oméga 3', text: 'Poissons gras (yaboy, sardines), graines de sésame, huile d\'arachide. Essentiels pour le cerveau du bébé.' },
-      { icon: '🥗', title: 'Fibres', text: 'Légumes (jaxatu, gombo, salade), fruits avec peau. Évite la constipation fréquente en T3.' },
-      { icon: '💧', title: 'Hydratation +++', text: 'Augmentez à 2,5-3 litres par jour. Surtout en saison chaude. Évitez les boissons sucrées industrielles.' },
-      { icon: '🚫', title: 'Pic de précaution', text: 'Évitez les plats lourds le soir. Fractionnez les repas. Pas d\'alcool, pas de tabac, pas d\'automédication.' }
-    ],
-    physical: [
-      { icon: '🚶🏾‍♀️', title: 'Marche quotidienne', text: 'Continuez 20-30 min/jour. Aide à la descente du bébé et prépare l\'accouchement.' },
-      { icon: '🪑', title: 'Position assise', text: 'Évitez de rester assise plus d\'1h. Surélevez vos jambes pour réduire les œdèmes.' },
-      { icon: '🤸🏾‍♀️', title: 'Exercices du périnée', text: 'Pratiquez les exercices de Kegel : 10 contractions, 3 fois par jour. Prépare l\'accouchement.' },
-      { icon: '😴', title: 'Sommeil', text: 'Coussins multiples : entre les jambes, sous le ventre, derrière le dos. Côté gauche impératif.' },
-      { icon: '🧠', title: 'Préparez-vous', text: 'Préparez votre sac de maternité dès 35 SA. Vérifiez votre dossier de réservation à la maternité.' }
-    ],
-    warnings: 'Dès 37 SA, l\'accouchement peut survenir à tout moment. Connaissez les signes du travail : contractions régulières, perte des eaux, perte du bouchon muqueux.'
-  }
-}
-
-// =====================================================
-// TRANSLATIONS
-// =====================================================
-const t = {
-  fr: {
-    welcome: "Bienvenue", login: "Se connecter", signup: "Créer un compte",
-    email: "Email", password: "Mot de passe", phone: "Téléphone",
-    firstName: "Prénom", lastName: "Nom", validate: "Valider",
-    noAccount: "Pas encore de compte ?", hasAccount: "Déjà un compte ?",
-    setupProfile: "Complétez votre profil",
-    week: "Semaine", weekShort: "S", days: "jours",
-    nextAppointment: "Prochain rendez-vous", noAppointment: "Aucun RDV planifié",
-    riskLow: "Grossesse normale", riskHigh: "⚠ Risque élevé",
-    home: "Accueil", carnet: "Carnet", advice: "Conseils", sos: "SOS", more: "Plus",
-    myFollowUp: "Mon suivi", trimester1: "T1", trimester2: "T2", trimester3: "T3",
-    medicalRecord: "Mon carnet médical", noConsultations: "Aucune consultation",
-    weight: "Poids", bp: "TA", uh: "HU", bcf: "BCF",
-    logout: "Se déconnecter", pregnancyComplete: "Aucune grossesse en cours",
-    helloName: "Bonjour", howAreYou: "comment vous sentez-vous ?",
-    daysToBaby: "jusqu'à votre bébé",
-    consultationFrom: "CPN du", performedBy: "par",
-    waitingForFirstCPN: "Votre première CPN n'a pas encore été saisie.",
-    sosTitle: "Bouton d'urgence",
-    sosSubtitle: "En cas d'urgence, votre sage-femme et vos proches seront alertés",
-    sosButton: "Appuyer pour alerte",
-    sosLocating: "Localisation en cours...",
-    sosSending: "Envoi de l'alerte...",
-    sosSent: "Alerte envoyée",
-    sosSentDesc: "Votre position a été partagée. Aide en route.",
-    sosCancel: "Annuler l'alerte",
-    sosError: "Erreur d'envoi",
-    sosNoLocation: "Activez la géolocalisation",
-    sosNotifiedTitle: "Personnes alertées",
-    sosYourLocation: "Votre position",
-    sosWhenToUse: "Quand utiliser le SOS",
-    sosUseCase1: "Saignements importants",
-    sosUseCase2: "Maux de tête sévères avec troubles visuels",
-    sosUseCase3: "Douleurs abdominales intenses",
-    sosUseCase4: "Diminution des mouvements du bébé",
-    sosUseCase5: "Convulsions ou perte de connaissance",
-    activeAlert: "Alerte en cours",
-    loadingContacts: "Chargement des contacts...",
-    consents: "Consentements",
-    pendingRequests: "Demandes en attente",
-    noPendingRequests: "Aucune demande en attente",
-    pendingBadge: "demande en attente",
-    pendingBadgePlural: "demandes en attente",
-    accept: "Accepter", refuse: "Refuser",
-    acceptedConsents: "Accès accordés",
-    confirmAccept: "Accepter cette demande ?",
-    confirmAcceptDesc: "donnera l'accès complet à votre dossier médical",
-    confirmRefuse: "Refuser cette demande ?",
-    requestedAt: "Demandé le",
-    privacyNote: "Vous pouvez à tout moment retirer un accès.",
-    noAccessGranted: "Aucun professionnel n'a accès à votre dossier",
-    // Conseils
-    adviceTitle: "Conseils & Bien-être",
-    adviceSubtitle: "Adaptés à votre grossesse et au Sénégal",
-    thisWeek: "Cette semaine",
-    nutritionTab: "🍽️ Nutrition",
-    physicalTab: "🚶🏾‍♀️ Activité physique",
-    warningsTab: "⚠️ À surveiller",
-    trimesterTitle: "Trimestre",
-    weekTitle: "Vous êtes à",
-    // Congé maternité
-    maternityLeave: "Congé maternité",
-    leaveStart: "Départ recommandé",
-    leaveEnd: "Retour prévu",
-    leaveDuration: "14 semaines (Sénégal)",
-    leaveBeforeBirth: "6 semaines avant",
-    leaveAfterBirth: "8 semaines après",
-    leaveLegal: "Code du Travail Art. L.143",
-    daysUntilLeave: "jours avant votre congé",
-    onLeave: "Vous êtes en congé maternité",
-    daysUntilReturn: "jours avant votre retour",
-    leaveInfo: "Info légale",
-  },
-  wo: {
-    welcome: "Dalal ak diam", login: "Dugg", signup: "Sos kont",
-    email: "Email", password: "Password", phone: "Telefon",
-    firstName: "Tur", lastName: "Sant", validate: "Wonal",
-    noAccount: "Amul kont ?", hasAccount: "Am nga kont ?",
-    setupProfile: "Mottali sa profil",
-    week: "Ayubés", weekShort: "S", days: "fan",
-    nextAppointment: "RDV bi ñëw", noAppointment: "Amul RDV",
-    riskLow: "Biir bu baax", riskHigh: "⚠ Mussiba ci kaw",
-    home: "Kër", carnet: "Karne", advice: "Ndigël", sos: "Mussiba", more: "Yeneen",
-    myFollowUp: "Sama wuyool", trimester1: "T1", trimester2: "T2", trimester3: "T3",
-    medicalRecord: "Sama karne fajj", noConsultations: "Amul consultation",
-    weight: "Diis", bp: "Tension", uh: "HU", bcf: "BCF",
-    logout: "Génn", pregnancyComplete: "Amul biir",
-    helloName: "Asalaa Maleekum", howAreYou: "naka nga def ?",
-    daysToBaby: "ngir sa doom",
-    consultationFrom: "CPN bu", performedBy: "ko",
-    waitingForFirstCPN: "Sa CPN bu njekk défuko.",
-    sosTitle: "Buton mussiba",
-    sosSubtitle: "Su am mussiba, sa sage-femme dañu yeg",
-    sosButton: "Bësal ngir alert",
-    sosLocating: "Mu ngi gisé fan nga nekk...",
-    sosSending: "Mu ngi yónnëe alert bi...",
-    sosSent: "Alert bi yónnëe na",
-    sosSentDesc: "Sa fan dañu ko yegle. Ndimbal ngi ñëw.",
-    sosCancel: "Bayyi alert bi",
-    sosError: "Erreur ci yónnëe",
-    sosNoLocation: "Joxal autorisation",
-    sosNotifiedTitle: "Nit ñi nu yegle",
-    sosYourLocation: "Sa fan",
-    sosWhenToUse: "Ban saa nga war jëfandikoo SOS",
-    sosUseCase1: "Deret bu bare",
-    sosUseCase2: "Métit boppu bu metti",
-    sosUseCase3: "Métit ci biir",
-    sosUseCase4: "Sa doom du yengu lu bare",
-    sosUseCase5: "Convulsions",
-    activeAlert: "Alert ngi dox",
-    loadingContacts: "Yittewu nañu sa contacts...",
-    consents: "Joxe ndigël",
-    pendingRequests: "Ñakkaay ñu xaar",
-    noPendingRequests: "Amul ñakkaay",
-    pendingBadge: "ñakkaay bu xaar",
-    pendingBadgePlural: "ñakkaay yu xaar",
-    accept: "Nangu", refuse: "Bañ",
-    acceptedConsents: "Joxe nañu ndigël",
-    confirmAccept: "Nangu ñakkaay bi ?",
-    confirmAcceptDesc: "dina am bés ci sa karne",
-    confirmRefuse: "Bañ ñakkaay bi ?",
-    requestedAt: "Ñakkaay bi",
-    privacyNote: "Mën nga jële bés bi.",
-    noAccessGranted: "Amul ku am bés",
-    adviceTitle: "Ndigël & jamm",
-    adviceSubtitle: "Bu jaaxal sa biir ak Senegaal",
-    thisWeek: "Ayubés bii",
-    nutritionTab: "🍽️ Lekk",
-    physicalTab: "🚶🏾‍♀️ Yëf",
-    warningsTab: "⚠️ Sàmm",
-    trimesterTitle: "Trimestre",
-    weekTitle: "Ngi ci",
-    maternityLeave: "Cong jur",
-    leaveStart: "Tambali",
-    leaveEnd: "Dellu",
-    leaveDuration: "14 ayubés (Senegaal)",
-    leaveBeforeBirth: "6 ayubés bal",
-    leaveAfterBirth: "8 ayubés gannaaw",
-    leaveLegal: "Code du Travail",
-    daysUntilLeave: "fan bal cong",
-    onLeave: "Ngi ci cong jur",
-    daysUntilReturn: "fan bal dellu",
-    leaveInfo: "Xibaar",
-  }
-}
-
-// =====================================================
-// MAIN APP
+// MAIN APP - Routeur de vues
 // =====================================================
 export default function App() {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [lang, setLang] = useState('fr')
+  const [view, setView] = useState({ name: 'home', data: null })
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -227,68 +21,78 @@ export default function App() {
       (_event, session) => {
         setSession(session)
         if (session) loadProfile(session.user.id)
-        else { setProfile(null); setLoading(false) }
+        else { setProfile(null); setLoading(false); setView({ name: 'home', data: null }) }
       }
     )
     return () => subscription.unsubscribe()
   }, [])
 
   async function loadProfile(userId) {
-    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
+    const { data } = await supabase
+      .from('profiles')
+      .select('*, structure:structures(name, region, district)')
+      .eq('id', userId)
+      .single()
     setProfile(data)
-    if (data?.preferred_language) setLang(data.preferred_language)
     setLoading(false)
   }
 
-  return (
-    <div style={appBgStyle}>
-      <PhoneFrame>
-        {loading ? <LoadingScreen/> :
-         !session ? <AuthScreen tr={t[lang]} lang={lang} setLang={setLang}/> :
-         !profile ? <ProfileSetupScreen tr={t[lang]} userId={session.user.id} email={session.user.email} onComplete={() => loadProfile(session.user.id)}/> :
-         profile.role !== 'femme' ? <WrongRoleScreen profile={profile}/> :
-         <MobileApp profile={profile} session={session} tr={t[lang]} lang={lang} setLang={setLang}/>}
-      </PhoneFrame>
-    </div>
-  )
+  // ============================================================
+  // GARDE-FRONTIÈRE : vérifier consentement avant d'ouvrir dossier
+  // ============================================================
+  async function openPatientDossier(patientId) {
+    if (!profile) return
+    const { data: consent } = await supabase
+      .from('consents')
+      .select('id, status')
+      .eq('woman_id', patientId)
+      .eq('granted_to', profile.id)
+      .eq('scope', 'lecture_dossier')
+      .eq('status', 'accorde')
+      .maybeSingle()
+
+    if (consent) {
+      setView({ name: 'patient', data: patientId })
+    } else {
+      setView({ name: 'requestConsent', data: patientId })
+    }
+  }
+
+  if (loading) return <LoadingScreen />
+  if (!session) return <AuthScreen />
+  if (!profile) return <ProfileSetupScreen userId={session.user.id} email={session.user.email} onComplete={() => loadProfile(session.user.id)} />
+
+  switch (view.name) {
+    case 'patient':
+      return <PatientFileView profile={profile} patientId={view.data} setView={setView} openPatientDossier={openPatientDossier} />
+    case 'newCPN':
+      return <NewCPNView profile={profile} pregnancyId={view.data.pregnancyId} patientId={view.data.patientId} setView={setView} />
+    case 'newPregnancy':
+      return <NewPregnancyView profile={profile} patientId={view.data} setView={setView} />
+    case 'alert':
+      return <AlertDetailView profile={profile} alertId={view.data} setView={setView} openPatientDossier={openPatientDossier} />
+    case 'enrollPatient':
+      return <EnrollPatientView profile={profile} setView={setView} openPatientDossier={openPatientDossier} />
+    case 'requestConsent':
+      return <RequestConsentScreen profile={profile} patientId={view.data} setView={setView} />
+    default:
+      return <DashboardHome profile={profile} setView={setView} openPatientDossier={openPatientDossier} />
+  }
 }
 
 // =====================================================
-// PHONE FRAME, LOADING, AUTH (inchangés)
+// LOADING & AUTH
 // =====================================================
-function PhoneFrame({ children }) {
-  return (
-    <div style={{
-      width: '100%', maxWidth: 400, height: 844, maxHeight: 'calc(100vh - 48px)',
-      background: '#FAF6F0', borderRadius: 44, overflow: 'hidden',
-      boxShadow: '0 60px 100px -20px rgba(0,0,0,0.6), 0 0 0 12px #1a0e08, 0 0 0 14px #2a1810',
-      display: 'flex', flexDirection: 'column', position: 'relative'
-    }}>
-      <div style={{ height: 44, background: '#FAF6F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 28px', fontSize: 14, fontWeight: 600, color: '#2a1810', flexShrink: 0, position: 'relative' }}>
-        <span style={{ fontVariantNumeric: 'tabular-nums' }}>9:41</span>
-        <div style={{ position: 'absolute', left: '50%', top: 8, transform: 'translateX(-50%)', width: 90, height: 28, background: '#1a0e08', borderRadius: 20 }}/>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 11 }}>📶</span>
-          <div style={{ width: 24, height: 12, border: '1.5px solid #2a1810', borderRadius: 3, padding: 1 }}>
-            <div style={{ width: '70%', height: '100%', background: '#2a1810', borderRadius: 1 }}/>
-          </div>
-        </div>
-      </div>
-      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>{children}</div>
-    </div>
-  )
-}
-
 function LoadingScreen() {
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={loadingStyle}>
       <div style={{ width: 60, height: 60, borderRadius: 18, background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FAF6F0', fontSize: 32, marginBottom: 16 }}>♥</div>
       <div style={{ fontSize: 32, fontFamily: 'Georgia, serif', fontWeight: 600 }}>Yaay</div>
     </div>
   )
 }
 
-function AuthScreen({ tr, lang, setLang }) {
+function AuthScreen() {
   const [mode, setMode] = useState('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -306,41 +110,51 @@ function AuthScreen({ tr, lang, setLang }) {
   }
 
   return (
-    <div style={{ flex: 1, padding: 24, display: 'flex', flexDirection: 'column', background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 50%, #2D5F5D 100%)', color: '#FAF6F0', overflowY: 'auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
-        {['fr', 'wo'].map(l => (
-          <button key={l} onClick={() => setLang(l)} style={{ padding: '4px 10px', fontSize: 11, fontWeight: 700, background: lang === l ? '#FAF6F0' : 'rgba(255,255,255,0.2)', color: lang === l ? '#2a1810' : '#FAF6F0', border: 'none', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit' }}>{l.toUpperCase()}</button>
-        ))}
-      </div>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: 600 }}>
-        <div style={{ width: 70, height: 70, borderRadius: 22, background: 'rgba(244,228,193,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, fontSize: 36, color: '#C44536' }}>♥</div>
-        <div style={{ fontSize: 40, fontFamily: 'Georgia, serif', fontWeight: 700, lineHeight: 1, letterSpacing: '-0.04em' }}>Yaay</div>
-        <div style={{ fontSize: 12, opacity: 0.85, marginTop: 8, fontStyle: 'italic' }}>{tr.welcome}</div>
-        <div style={{ marginTop: 32, background: '#FAF6F0', color: '#2a1810', borderRadius: 24, padding: 24 }}>
-          <h2 style={{ fontSize: 22, fontFamily: 'Georgia, serif', fontWeight: 600, marginBottom: 16 }}>{mode === 'signup' ? tr.signup : tr.login}</h2>
-          <form onSubmit={handleSubmit}>
-            <div><label style={mLabelStyle}>{tr.email}</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={mInputStyle}/></div>
-            <div style={{ marginTop: 14 }}><label style={mLabelStyle}>{tr.password}</label><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} style={mInputStyle}/></div>
-            {error && <div style={mErrorStyle}>⚠️ {error}</div>}
-            <button type="submit" disabled={loading} style={{ ...mPrimaryButtonStyle, marginTop: 20, opacity: loading ? 0.6 : 1 }}>{loading ? '...' : (mode === 'signup' ? tr.signup : tr.login)}</button>
-          </form>
-          <div style={{ textAlign: 'center', marginTop: 16, fontSize: 12, color: '#5D4037' }}>
-            {mode === 'signup' ? tr.hasAccount : tr.noAccount}{' '}
-            <button onClick={() => { setMode(mode === 'signup' ? 'signin' : 'signup'); setError(null) }} style={mLinkStyle}>{mode === 'signup' ? tr.login : tr.signup}</button>
+    <div style={authBgStyle}>
+      <div style={authCardStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+          <div style={logoSmallStyle}>♥</div>
+          <div>
+            <div style={{ fontSize: 24, fontWeight: 700, fontFamily: 'Georgia, serif' }}>Yaay</div>
+            <div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 600, letterSpacing: '0.05em' }}>ESPACE PROFESSIONNEL</div>
           </div>
+        </div>
+        <h1 style={{ fontSize: 28, fontWeight: 600, fontFamily: 'Georgia, serif', marginTop: 32, lineHeight: 1.2 }}>
+          {mode === 'signup' ? "Créer un compte" : "Se connecter"}<br/>
+          <span style={{ fontStyle: 'italic', color: '#C44536' }}>{mode === 'signup' ? "professionnel" : "à Yaay Pro"}</span>
+        </h1>
+        <form onSubmit={handleSubmit} style={{ marginTop: 24 }}>
+          <div><label style={labelStyle}>Email</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={inputStyle}/></div>
+          <div style={{ marginTop: 16 }}><label style={labelStyle}>Mot de passe</label><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} style={inputStyle}/></div>
+          {error && <div style={errorBoxStyle}>⚠️ {error}</div>}
+          <button type="submit" disabled={loading} style={{ ...primaryButtonStyle, marginTop: 24, opacity: loading ? 0.6 : 1 }}>
+            {loading ? '...' : (mode === 'signup' ? 'Créer mon compte' : 'Se connecter')}
+          </button>
+        </form>
+        <div style={{ textAlign: 'center', marginTop: 24, fontSize: 13, color: '#5D4037' }}>
+          {mode === 'signup' ? "Déjà un compte ? " : "Pas encore de compte ? "}
+          <button onClick={() => { setMode(mode === 'signup' ? 'signin' : 'signup'); setError(null) }} style={linkButtonStyle}>
+            {mode === 'signup' ? 'Se connecter' : "Créer un compte"}
+          </button>
         </div>
       </div>
     </div>
   )
 }
 
-function ProfileSetupScreen({ tr, userId, email, onComplete }) {
+function ProfileSetupScreen({ userId, email, onComplete }) {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
+  const [role, setRole] = useState('sage_femme')
   const [phone, setPhone] = useState('')
-  const [dob, setDob] = useState('')
+  const [structureId, setStructureId] = useState('')
+  const [structures, setStructures] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+
+  useEffect(() => {
+    supabase.from('structures').select('id, name, region').then(({ data }) => { if (data) setStructures(data) })
+  }, [])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -348,759 +162,1442 @@ function ProfileSetupScreen({ tr, userId, email, onComplete }) {
     setError(null)
     const { error } = await supabase.from('profiles').insert({
       id: userId, email, first_name: firstName, last_name: lastName,
-      role: 'femme', phone: '+221' + phone, date_of_birth: dob || null, preferred_language: 'fr'
+      role, phone: '+221' + phone, structure_id: structureId || null, preferred_language: 'fr'
     })
     if (error) { setError(error.message); setLoading(false) }
     else onComplete()
   }
 
   return (
-    <div style={{ flex: 1, padding: 24, overflowY: 'auto' }}>
-      <div style={{ width: 50, height: 50, borderRadius: 16, background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FAF6F0', fontSize: 24, marginBottom: 20 }}>♥</div>
-      <h1 style={{ fontSize: 26, fontFamily: 'Georgia, serif', fontWeight: 600, lineHeight: 1.2 }}>{tr.setupProfile}</h1>
-      <form onSubmit={handleSubmit} style={{ marginTop: 24 }}>
-        <div><label style={mLabelStyle}>{tr.firstName}</label><input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} required style={mInputStyle}/></div>
-        <div style={{ marginTop: 14 }}><label style={mLabelStyle}>{tr.lastName}</label><input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} required style={mInputStyle}/></div>
-        <div style={{ marginTop: 14 }}>
-          <label style={mLabelStyle}>{tr.phone}</label>
-          <div style={{ display: 'flex', alignItems: 'center', background: '#FFFFFF', borderRadius: 12, border: '2px solid rgba(42,24,16,0.08)', overflow: 'hidden' }}>
-            <span style={{ padding: '12px 14px', fontWeight: 600, borderRight: '1px solid rgba(42,24,16,0.1)' }}>🇸🇳 +221</span>
-            <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="77 123 45 67" required style={{ ...mInputStyle, border: 'none' }}/>
-          </div>
+    <div style={authBgStyle}>
+      <div style={{ ...authCardStyle, maxWidth: 520 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+          <div style={logoSmallStyle}>♥</div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, fontFamily: 'Georgia, serif' }}>Bienvenue dans Yaay Pro</h1>
         </div>
-        <div style={{ marginTop: 14 }}><label style={mLabelStyle}>Date de naissance</label><input type="date" value={dob} onChange={(e) => setDob(e.target.value)} style={mInputStyle}/></div>
-        {error && <div style={mErrorStyle}>⚠️ {error}</div>}
-        <button type="submit" disabled={loading} style={{ ...mPrimaryButtonStyle, marginTop: 24, opacity: loading ? 0.6 : 1 }}>{loading ? '...' : tr.validate}</button>
-      </form>
-    </div>
-  )
-}
-
-function WrongRoleScreen({ profile }) {
-  async function handleLogout() { await supabase.auth.signOut() }
-  return (
-    <div style={{ flex: 1, padding: 24, display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
-      <div style={{ fontSize: 60, marginBottom: 16 }}>🔒</div>
-      <h2 style={{ fontSize: 22, fontFamily: 'Georgia, serif', marginBottom: 12 }}>Accès réservé aux patientes</h2>
-      <button onClick={handleLogout} style={mPrimaryButtonStyle}>Se déconnecter</button>
+        <form onSubmit={handleSubmit}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div><label style={labelStyle}>Prénom</label><input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} required style={inputStyle}/></div>
+            <div><label style={labelStyle}>Nom</label><input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} required style={inputStyle}/></div>
+          </div>
+          <div style={{ marginTop: 16 }}>
+            <label style={labelStyle}>Rôle</label>
+            <select value={role} onChange={(e) => setRole(e.target.value)} style={inputStyle}>
+              <option value="sage_femme">Sage-femme</option>
+              <option value="medecin">Médecin</option>
+            </select>
+          </div>
+          <div style={{ marginTop: 16 }}>
+            <label style={labelStyle}>Téléphone</label>
+            <div style={{ display: 'flex', alignItems: 'center', background: '#FFFFFF', borderRadius: 12, border: '2px solid rgba(42,24,16,0.08)', overflow: 'hidden' }}>
+              <span style={{ padding: '12px 14px', fontWeight: 600, borderRight: '1px solid rgba(42,24,16,0.1)' }}>🇸🇳 +221</span>
+              <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="77 654 32 10" required style={{ ...inputStyle, border: 'none' }}/>
+            </div>
+          </div>
+          <div style={{ marginTop: 16 }}>
+            <label style={labelStyle}>Structure de santé</label>
+            <select value={structureId} onChange={(e) => setStructureId(e.target.value)} style={inputStyle}>
+              <option value="">— Sélectionnez —</option>
+              {structures.map(s => <option key={s.id} value={s.id}>{s.name} ({s.region})</option>)}
+            </select>
+          </div>
+          {error && <div style={errorBoxStyle}>⚠️ {error}</div>}
+          <button type="submit" disabled={loading} style={{ ...primaryButtonStyle, marginTop: 24, opacity: loading ? 0.6 : 1 }}>
+            {loading ? '...' : 'Valider mon profil'}
+          </button>
+        </form>
+      </div>
     </div>
   )
 }
 
 // =====================================================
-// MOBILE APP - 5 onglets désormais
+// REQUEST CONSENT SCREEN
 // =====================================================
-function MobileApp({ profile, session, tr, lang, setLang }) {
-  const [tab, setTab] = useState('home')
-  const [pregnancy, setPregnancy] = useState(null)
-  const [consultations, setConsultations] = useState([])
-  const [appointments, setAppointments] = useState([])
-  const [activeAlert, setActiveAlert] = useState(null)
-  const [emergencyContacts, setEmergencyContacts] = useState([])
-  const [midwives, setMidwives] = useState([])
-  const [pendingRequests, setPendingRequests] = useState([])
+function RequestConsentScreen({ profile, patientId, setView }) {
+  const [patient, setPatient] = useState(null)
+  const [existingRequest, setExistingRequest] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState(null)
+  const [success, setSuccess] = useState(false)
 
-  useEffect(() => { loadData() }, [])
-
-  useEffect(() => {
-    if (!profile?.id) return
-    const channel = supabase
-      .channel('app-changes-' + profile.id)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'consultations' }, () => loadData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pregnancies', filter: `woman_id=eq.${profile.id}` }, () => loadData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'alerts', filter: `woman_id=eq.${profile.id}` }, () => loadData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'consent_requests', filter: `woman_id=eq.${profile.id}` }, () => loadData())
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [profile?.id])
+  useEffect(() => { loadData() }, [patientId])
 
   async function loadData() {
-    const { data: preg } = await supabase.from('pregnancies').select('*').eq('woman_id', profile.id).eq('status', 'en_cours').maybeSingle()
-    setPregnancy(preg)
+    setLoading(true)
+    const { data: p } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, ipu, phone, date_of_birth, city, region')
+      .eq('id', patientId).single()
+    setPatient(p)
 
-    if (preg) {
-      const { data: cpns } = await supabase.from('consultations').select('*').eq('pregnancy_id', preg.id).order('consultation_date', { ascending: false })
-      setConsultations(cpns || [])
-
-      const { data: apps } = await supabase.from('appointments').select('*').eq('pregnancy_id', preg.id).gte('appointment_date', new Date().toISOString()).order('appointment_date', { ascending: true })
-      setAppointments(apps || [])
-    }
-
-    const { data: contacts } = await supabase.from('emergency_contacts').select('*').eq('woman_id', profile.id).eq('notify_for_sos', true)
-    setEmergencyContacts(contacts || [])
-
-    const { data: consents } = await supabase.from('consents').select('granted_to').eq('woman_id', profile.id).eq('status', 'accorde').eq('scope', 'lecture_dossier')
-    if (consents && consents.length > 0) {
-      const proIds = [...new Set(consents.map(c => c.granted_to))]
-      const { data: pros } = await supabase.from('profiles').select('id, first_name, last_name, phone').in('id', proIds)
-      setMidwives(pros || [])
-    } else {
-      setMidwives([])
-    }
-
-    const { data: alert } = await supabase.from('alerts').select('*').eq('woman_id', profile.id).eq('type', 'sos').eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle()
-    setActiveAlert(alert)
-
-    const { data: requests } = await supabase.from('consent_requests').select('*').eq('woman_id', profile.id).eq('status', 'en_attente').order('created_at', { ascending: false })
-    if (requests && requests.length > 0) {
-      const requesterIds = [...new Set(requests.map(r => r.requested_by))]
-      const { data: requesters } = await supabase.from('profiles').select('id, first_name, last_name, role, phone, structure_id').in('id', requesterIds)
-      const structureIds = [...new Set((requesters || []).map(r => r.structure_id).filter(Boolean))]
-      const { data: structures } = structureIds.length > 0
-        ? await supabase.from('structures').select('id, name, region').in('id', structureIds)
-        : { data: [] }
-      const requestsWithRequesters = requests.map(r => {
-        const requester = requesters?.find(req => req.id === r.requested_by)
-        const structure = structures?.find(s => s.id === requester?.structure_id)
-        return { ...r, requester: { ...requester, structure } }
-      })
-      setPendingRequests(requestsWithRequesters)
-    } else {
-      setPendingRequests([])
-    }
+    const { data: req } = await supabase
+      .from('consent_requests')
+      .select('*')
+      .eq('woman_id', patientId)
+      .eq('requested_by', profile.id)
+      .in('status', ['en_attente', 'refuse'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    setExistingRequest(req)
 
     setLoading(false)
   }
 
+  async function sendRequest() {
+    setSending(true)
+    setError(null)
+    try {
+      const { error: reqError } = await supabase.from('consent_requests').insert({
+        woman_id: patientId,
+        requested_by: profile.id,
+        scope: 'lecture_dossier',
+        message: `${profile.first_name} ${profile.last_name} (${profile.role === 'sage_femme' ? 'sage-femme' : 'médecin'}) à ${profile.structure?.name || 'la structure'} demande l'accès à votre dossier médical.`
+      })
+      if (reqError) throw reqError
+      setSuccess(true)
+      setSending(false)
+    } catch (err) {
+      setError(err.message)
+      setSending(false)
+    }
+  }
+
   if (loading) return <LoadingScreen/>
+  if (!patient) return <div>Patiente introuvable.</div>
 
   return (
-    <>
-      <TopBar profile={profile} lang={lang} setLang={setLang}/>
-      {activeAlert && tab !== 'sos' && (
-        <button onClick={() => setTab('sos')} style={{ padding: '10px 16px', background: '#C44536', color: '#FAF6F0', border: 'none', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, fontWeight: 700, animation: 'pulse 2s infinite' }}>
-          <span>🚨 {tr.activeAlert}</span><span>→</span>
-        </button>
-      )}
-      {pendingRequests.length > 0 && tab !== 'more' && (
-        <button onClick={() => setTab('more')} style={{ padding: '10px 16px', background: 'linear-gradient(135deg, #D4A574 0%, #8B6F5C 100%)', color: '#FAF6F0', border: 'none', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, fontWeight: 700 }}>
-          <span>📨 {pendingRequests.length} {pendingRequests.length === 1 ? tr.pendingBadge : tr.pendingBadgePlural}</span><span>→</span>
-        </button>
-      )}
-      <div style={{ flex: 1, overflowY: 'auto', background: '#FAF6F0' }}>
-        {tab === 'home' && <HomeView profile={profile} pregnancy={pregnancy} appointments={appointments} tr={tr}/>}
-        {tab === 'carnet' && <CarnetView pregnancy={pregnancy} consultations={consultations} tr={tr}/>}
-        {tab === 'advice' && <AdviceView pregnancy={pregnancy} tr={tr}/>}
-        {tab === 'sos' && <SOSView profile={profile} activeAlert={activeAlert} emergencyContacts={emergencyContacts} midwives={midwives} tr={tr} onAlertChange={loadData}/>}
-        {tab === 'more' && <MoreView profile={profile} pendingRequests={pendingRequests} midwives={midwives} tr={tr} onChange={loadData}/>}
-      </div>
-      <BottomNav tab={tab} setTab={setTab} tr={tr} hasAlert={!!activeAlert} pendingCount={pendingRequests.length}/>
-    </>
-  )
-}
-
-function TopBar({ profile, lang, setLang }) {
-  return (
-    <div style={{ padding: '8px 20px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(42,24,16,0.06)', background: '#FAF6F0', flexShrink: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ width: 36, height: 36, borderRadius: 12, background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FAF6F0', fontSize: 18 }}>♥</div>
-        <div>
-          <div style={{ fontSize: 20, fontFamily: 'Georgia, serif', fontWeight: 700, color: '#2a1810', lineHeight: 1 }}>Yaay</div>
-          <div style={{ fontSize: 10, color: '#8B6F5C', marginTop: 2, fontWeight: 500 }}>{profile.first_name}</div>
+    <div style={pageStyle}>
+      <header style={headerStyle}>
+        <button onClick={() => setView({ name: 'home' })} style={backButtonStyle}>← Retour</button>
+        <div style={{ flex: 1, marginLeft: 16 }}>
+          <div style={{ fontSize: 20, fontWeight: 700, fontFamily: 'Georgia, serif' }}>Demander un consentement</div>
+          <div style={{ fontSize: 11, color: '#8B6F5C', marginTop: 2 }}>Conformité RGPD - CDP Sénégal</div>
         </div>
-      </div>
-      <div style={{ display: 'flex', gap: 4 }}>
-        {['fr', 'wo'].map(l => (
-          <button key={l} onClick={() => setLang(l)} style={{ padding: '4px 8px', fontSize: 10, fontWeight: 700, background: lang === l ? '#2a1810' : 'rgba(42,24,16,0.06)', color: lang === l ? '#FAF6F0' : '#2a1810', border: 'none', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' }}>{l.toUpperCase()}</button>
-        ))}
-      </div>
+      </header>
+
+      <main style={{ padding: '24px 32px', maxWidth: 720, margin: '0 auto' }}>
+        <div style={{
+          padding: 14, background: 'linear-gradient(135deg, #FFE8E2 0%, #F4E4C1 100%)',
+          border: '1px solid rgba(196,69,54,0.3)', borderRadius: 14, marginBottom: 20,
+          display: 'flex', gap: 12, alignItems: 'flex-start'
+        }}>
+          <div style={{ fontSize: 24 }}>🔐</div>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#8B2E26' }}>Vous n'avez pas encore l'accès à ce dossier</div>
+            <div style={{ fontSize: 12, color: '#5D4037', marginTop: 4, lineHeight: 1.5 }}>
+              Conformément à la loi sénégalaise sur la protection des données personnelles, vous devez obtenir le consentement explicite de la patiente avant d'accéder à son dossier médical.
+            </div>
+          </div>
+        </div>
+
+        <div style={cardStyle}>
+          <div style={sectionLabelStyle}>Patiente trouvée</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 14 }}>
+            <div style={{ width: 60, height: 60, borderRadius: 18, background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', color: '#FAF6F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 700 }}>
+              {patient.first_name?.[0]}{patient.last_name?.[0]}
+            </div>
+            <div>
+              <div style={{ fontSize: 22, fontWeight: 700, fontFamily: 'Georgia, serif' }}>{patient.first_name} {patient.last_name}</div>
+              <div style={{ fontSize: 12, color: '#8B6F5C', marginTop: 2, fontFamily: 'monospace' }}>{patient.ipu}</div>
+              <div style={{ fontSize: 11, color: '#5D4037', marginTop: 4 }}>{patient.phone} {patient.city && `· ${patient.city}`}</div>
+            </div>
+          </div>
+        </div>
+
+        {success ? (
+          <div style={{ ...cardStyle, marginTop: 16, textAlign: 'center', padding: 32 }}>
+            <div style={{ width: 70, height: 70, borderRadius: '50%', background: 'linear-gradient(135deg, #2D5F5D 0%, #1F4341 100%)', color: '#FAF6F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, margin: '0 auto', marginBottom: 16 }}>📨</div>
+            <h2 style={{ fontSize: 22, fontFamily: 'Georgia, serif', fontWeight: 600 }}>Demande envoyée !</h2>
+            <p style={{ fontSize: 13, color: '#5D4037', marginTop: 10, lineHeight: 1.5 }}>
+              {patient.first_name} reçoit immédiatement une notification sur son téléphone.<br/>
+              Vous serez automatiquement notifié(e) dès qu'elle aura répondu.
+            </p>
+            <button onClick={() => setView({ name: 'home' })} style={{ ...primaryButtonStyle, marginTop: 24, maxWidth: 300 }}>
+              Retour au dashboard
+            </button>
+          </div>
+        ) : existingRequest && existingRequest.status === 'en_attente' ? (
+          <div style={{ ...cardStyle, marginTop: 16, padding: 24, textAlign: 'center' }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>⏳</div>
+            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Demande déjà en attente</div>
+            <div style={{ fontSize: 12, color: '#5D4037', lineHeight: 1.5 }}>
+              Vous avez envoyé une demande à {patient.first_name} le {new Date(existingRequest.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}. Elle n'a pas encore répondu.
+            </div>
+            <button onClick={() => setView({ name: 'home' })} style={{ ...primaryButtonStyle, marginTop: 20, maxWidth: 300 }}>Retour</button>
+          </div>
+        ) : (
+          <>
+            {existingRequest && existingRequest.status === 'refuse' && (
+              <div style={{ marginTop: 16, padding: 14, background: '#FFE8E2', border: '1px solid rgba(196,69,54,0.3)', borderRadius: 12, fontSize: 12, color: '#8B2E26', lineHeight: 1.5 }}>
+                ⚠️ Cette patiente a refusé votre précédente demande le {new Date(existingRequest.responded_at).toLocaleDateString('fr-FR')}. Vous pouvez en envoyer une nouvelle.
+              </div>
+            )}
+
+            <div style={{ marginTop: 16, padding: 16, background: '#F5F1EB', borderRadius: 14, fontSize: 12, color: '#5D4037', lineHeight: 1.6 }}>
+              ℹ️ <strong>Ce qui va se passer :</strong>
+              <ol style={{ marginTop: 8, paddingLeft: 20 }}>
+                <li>{patient.first_name} reçoit une notification sur son téléphone</li>
+                <li>Elle voit votre nom, votre rôle et votre structure</li>
+                <li>Elle peut <strong>accepter</strong> ou <strong>refuser</strong> votre demande</li>
+                <li>Si elle accepte, vous accédez à <strong>tout son dossier</strong></li>
+              </ol>
+            </div>
+
+            {error && <div style={{ marginTop: 14, padding: 12, background: '#FFE8E2', borderRadius: 10, color: '#8B2E26', fontSize: 12, fontWeight: 600 }}>⚠️ {error}</div>}
+
+            <div style={{ marginTop: 20, display: 'flex', gap: 10 }}>
+              <button onClick={() => setView({ name: 'home' })} style={{ flex: 1, padding: 14, background: '#F5F1EB', color: '#5D4037', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Annuler</button>
+              <button onClick={sendRequest} disabled={sending} style={{ flex: 2, ...primaryButtonStyle, background: 'linear-gradient(135deg, #2D5F5D 0%, #1F4341 100%)', opacity: sending ? 0.6 : 1 }}>
+                {sending ? '...' : '📨 Envoyer la demande'}
+              </button>
+            </div>
+          </>
+        )}
+      </main>
     </div>
   )
 }
 
 // =====================================================
-// CALCUL CONGÉ MATERNITÉ (législation Sénégal)
+// DASHBOARD HOME - tout corrigé
 // =====================================================
-function calculateMaternityLeave(expectedDeliveryDate) {
-  if (!expectedDeliveryDate) return null
-  const dda = new Date(expectedDeliveryDate)
-  const today = new Date()
+function DashboardHome({ profile, setView, openPatientDossier }) {
+  const [searchInput, setSearchInput] = useState('')
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [searchError, setSearchError] = useState(null)
+  const [myPatients, setMyPatients] = useState([])
+  const [stats, setStats] = useState({ patients: 0, pregnancies: 0, alerts: 0 })
+  const [activeAlerts, setActiveAlerts] = useState([])
+  const [refreshKey, setRefreshKey] = useState(0)
 
-  // Code Travail Sénégal Art. L.143 :
-  // 14 semaines total, 6 sem avant accouchement + 8 sem après
-  const leaveStart = new Date(dda)
-  leaveStart.setDate(leaveStart.getDate() - 42) // 6 semaines avant DDA
+  // Fonction unique de chargement complet
+  async function loadAll() {
+    if (!profile?.id) return
+    console.log('[loadAll] début rechargement')
 
-  const leaveEnd = new Date(dda)
-  leaveEnd.setDate(leaveEnd.getDate() + 56) // 8 semaines après DDA
+    // 1. Récupérer les consentements actifs
+    const { data: consents, error: e1 } = await supabase
+      .from('consents').select('woman_id')
+      .eq('granted_to', profile.id)
+      .eq('status', 'accorde')
+      .eq('scope', 'lecture_dossier')
 
-  const daysUntilLeave = Math.ceil((leaveStart - today) / (1000 * 60 * 60 * 24))
-  const daysUntilReturn = Math.ceil((leaveEnd - today) / (1000 * 60 * 60 * 24))
-  const isOnLeave = today >= leaveStart && today <= leaveEnd
+    if (e1) { console.error('[loadAll] consents error:', e1); return }
 
-  return { leaveStart, leaveEnd, daysUntilLeave, daysUntilReturn, isOnLeave }
-}
+    const uniqueIds = consents ? [...new Set(consents.map(c => c.woman_id))] : []
+    console.log('[loadAll] patientes consenties:', uniqueIds.length)
 
-// =====================================================
-// HOME VIEW (avec congé maternité)
-// =====================================================
-function HomeView({ profile, pregnancy, appointments, tr }) {
-  if (!pregnancy) {
-    return (
-      <div style={{ padding: 24, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70%' }}>
-        <div style={{ fontSize: 60, marginBottom: 16 }}>🤰</div>
-        <h2 style={{ fontSize: 22, fontFamily: 'Georgia, serif', marginBottom: 12 }}>{tr.pregnancyComplete}</h2>
-        <p style={{ fontSize: 13, color: '#5D4037', lineHeight: 1.5 }}>Demandez à votre sage-femme de créer votre dossier de grossesse.</p>
-      </div>
-    )
+    // 2. Charger les patientes + grossesses (en 2 temps, pas de jointure complexe)
+    if (uniqueIds.length === 0) {
+      setMyPatients([])
+      setStats({ patients: 0, pregnancies: 0, alerts: 0 })
+      setActiveAlerts([])
+      return
+    }
+
+    const { data: patients } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, ipu, phone')
+      .in('id', uniqueIds)
+
+    const { data: pregnancies } = await supabase
+      .from('pregnancies')
+      .select('id, woman_id, status, last_period_date, expected_delivery_date, current_risk_level')
+      .in('woman_id', uniqueIds)
+
+    const patientsWithPregs = (patients || []).map(p => ({
+      ...p,
+      pregnancies: (pregnancies || []).filter(pr => pr.woman_id === p.id)
+    }))
+
+    setMyPatients(patientsWithPregs)
+
+    // 3. Stats
+    const pregCount = (pregnancies || []).filter(p => p.status === 'en_cours').length
+
+    const { data: alerts } = await supabase
+      .from('alerts')
+      .select('id, woman_id, type, status, created_at, latitude, longitude, gps_accuracy')
+      .in('woman_id', uniqueIds)
+      .eq('status', 'active')
+      .eq('type', 'sos')
+      .order('created_at', { ascending: false })
+
+    // Joindre les noms aux alertes
+    const alertsWithNames = (alerts || []).map(a => ({
+      ...a,
+      woman: patientsWithPregs.find(p => p.id === a.woman_id)
+    }))
+
+    setActiveAlerts(alertsWithNames)
+    setStats({
+      patients: uniqueIds.length,
+      pregnancies: pregCount,
+      alerts: alertsWithNames.length
+    })
+
+    console.log('[loadAll] terminé. Patientes:', uniqueIds.length, 'Grossesses:', pregCount, 'Alertes:', alertsWithNames.length)
   }
 
-  const weeks = Math.floor((new Date() - new Date(pregnancy.last_period_date)) / (1000 * 60 * 60 * 24 * 7))
-  const daysToTerm = Math.floor((new Date(pregnancy.expected_delivery_date) - new Date()) / (1000 * 60 * 60 * 24))
-  const progress = Math.min(100, (weeks / 40) * 100)
-  const nextApp = appointments[0]
-  const isHighRisk = pregnancy.current_risk_level === 'eleve' || pregnancy.current_risk_level === 'tres_eleve'
-  const leave = calculateMaternityLeave(pregnancy.expected_delivery_date)
+  // Charger au montage et quand refreshKey change
+  useEffect(() => { loadAll() }, [profile?.id, refreshKey])
+
+  // Realtime + polling de secours
+  useEffect(() => {
+    if (!profile?.id) return
+
+    // Polling de secours toutes les 8 secondes
+    const pollInterval = setInterval(() => {
+      console.log('[polling] rafraîchissement automatique')
+      loadAll()
+    }, 8000)
+
+    // Channel Realtime
+    const channel = supabase.channel('pro-dashboard-' + profile.id)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'consents' }, (payload) => {
+        console.log('[realtime] consents change:', payload.eventType)
+        loadAll()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'consent_requests' }, (payload) => {
+        console.log('[realtime] consent_requests change:', payload.eventType)
+        loadAll()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'alerts' }, (payload) => {
+        console.log('[realtime] alerts change:', payload.eventType)
+        loadAll()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pregnancies' }, (payload) => {
+        console.log('[realtime] pregnancies change:', payload.eventType)
+        loadAll()
+      })
+      .subscribe((status) => {
+        console.log('[realtime] subscription status:', status)
+      })
+
+    return () => {
+      clearInterval(pollInterval)
+      supabase.removeChannel(channel)
+    }
+  }, [profile?.id])
+
+  async function handleSearch() {
+    const ipu = searchInput.trim().toUpperCase()
+    if (ipu.length < 6) return
+    setSearchLoading(true); setSearchError(null)
+    try {
+      const { data, error } = await supabase.from('profiles').select('id').eq('ipu', ipu).eq('role', 'femme').maybeSingle()
+      if (error) throw error
+      if (!data) setSearchError(`Aucune patiente trouvée avec l'IPU ${ipu}`)
+      else openPatientDossier(data.id)
+    } catch (err) { setSearchError(err.message) } finally { setSearchLoading(false) }
+  }
+
+  async function handleLogout() { await supabase.auth.signOut() }
+  const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
   return (
-    <div style={{ padding: '20px 18px 100px' }}>
-      <div>
-        <div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{tr.helloName}</div>
-        <div style={{ fontSize: 26, fontFamily: 'Georgia, serif', fontWeight: 600, color: '#2a1810', marginTop: 4, lineHeight: 1.1 }}>
-          {profile.first_name},<br/>
-          <span style={{ color: '#C44536', fontStyle: 'italic' }}>{tr.howAreYou}</span>
-        </div>
-      </div>
-
-      <div style={{ marginTop: 20, background: 'linear-gradient(135deg, #2D5F5D 0%, #1F4341 100%)', borderRadius: 28, padding: '24px 22px', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: -30, right: -30, width: 160, height: 160, borderRadius: '50%', background: 'radial-gradient(circle, rgba(244,228,193,0.15) 0%, transparent 70%)' }}/>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative' }}>
+    <div style={pageStyle}>
+      <header style={headerStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={logoSmallStyle}>♥</div>
           <div>
-            <div style={{ fontSize: 10, color: 'rgba(244,228,193,0.7)', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{tr.weekShort}{weeks} · {tr.myFollowUp}</div>
-            <div style={{ fontSize: 46, fontFamily: 'Georgia, serif', fontWeight: 600, color: '#FAF6F0', marginTop: 4, lineHeight: 1 }}>
-              {daysToTerm > 0 ? daysToTerm : 0}
-              <span style={{ fontSize: 16, fontWeight: 400, color: 'rgba(244,228,193,0.6)', marginLeft: 6 }}>{tr.days}</span>
+            <div style={{ fontSize: 20, fontWeight: 700, fontFamily: 'Georgia, serif', lineHeight: 1 }}>
+              Yaay <span style={{ fontWeight: 400, fontStyle: 'italic', color: '#8B6F5C' }}>Pro</span>
             </div>
-            <div style={{ fontSize: 13, color: 'rgba(244,228,193,0.85)', marginTop: 4 }}>{tr.daysToBaby}</div>
-          </div>
-          <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(244,228,193,0.12)', border: '2px solid rgba(244,228,193,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30 }}>👶</div>
-        </div>
-        <div style={{ marginTop: 20 }}>
-          <div style={{ height: 6, background: 'rgba(244,228,193,0.15)', borderRadius: 3, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${progress}%`, background: 'linear-gradient(90deg, #F4E4C1 0%, #D4A574 100%)', borderRadius: 3 }}/>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 10, color: 'rgba(244,228,193,0.6)', fontWeight: 500 }}>
-            <span>S0</span>
-            <span style={{ color: '#F4E4C1', fontWeight: 700 }}>{weeks <= 13 ? tr.trimester1 : weeks <= 27 ? `${tr.trimester2} ✓` : `${tr.trimester3} ✓`}</span>
-            <span>S40</span>
+            <div style={{ fontSize: 10, color: '#8B6F5C', fontWeight: 600, marginTop: 2 }}>{profile.structure?.name || 'Structure non définie'}</div>
           </div>
         </div>
-        <div style={{ marginTop: 18, background: isHighRisk ? 'rgba(196,69,54,0.2)' : 'rgba(244,228,193,0.12)', border: `1px solid ${isHighRisk ? 'rgba(196,69,54,0.4)' : 'rgba(244,228,193,0.2)'}`, borderRadius: 14, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: isHighRisk ? '#FF6B6B' : '#7FB069' }}/>
-          <div style={{ flex: 1, fontSize: 12, color: '#FAF6F0', fontWeight: 600 }}>{isHighRisk ? tr.riskHigh : tr.riskLow}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button onClick={() => setRefreshKey(k => k + 1)} title="Rafraîchir" style={{ padding: 8, background: '#F5F1EB', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 16 }}>🔄</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 14px 4px 4px', background: '#F5F1EB', borderRadius: 50 }}>
+            <div style={avatarStyle}>{profile.first_name?.[0]}{profile.last_name?.[0]}</div>
+            <div style={{ lineHeight: 1.2 }}>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>{profile.first_name} {profile.last_name}</div>
+              <div style={{ fontSize: 10, color: '#8B6F5C' }}>{profile.role === 'sage_femme' ? 'Sage-femme' : 'Médecin'}</div>
+            </div>
+            <button onClick={handleLogout} style={{ marginLeft: 8, padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#8B6F5C' }}>⏻</button>
+          </div>
         </div>
-      </div>
+      </header>
 
-      {nextApp && (
-        <div style={{ marginTop: 14, background: '#FFFFFF', borderRadius: 20, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14, border: '1px solid rgba(42,24,16,0.04)' }}>
-          <div style={{ width: 52, height: 52, borderRadius: 16, background: 'linear-gradient(135deg, #F4E4C1 0%, #E8D5A8 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: '#8B6F5C' }}>{new Date(nextApp.appointment_date).toLocaleDateString('fr-FR', { month: 'short' }).toUpperCase()}</div>
-            <div style={{ fontSize: 22, fontFamily: 'Georgia, serif', fontWeight: 700, color: '#2a1810', lineHeight: 1 }}>{new Date(nextApp.appointment_date).getDate()}</div>
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 600, textTransform: 'uppercase' }}>{tr.nextAppointment}</div>
-            <div style={{ fontSize: 15, color: '#2a1810', fontWeight: 600, marginTop: 2 }}>{nextApp.type === 'cpn' ? 'Consultation prénatale' : nextApp.type}</div>
+      {activeAlerts.length > 0 && (
+        <div style={{ background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', color: '#FAF6F0', padding: '14px 32px', animation: 'pulse-alert 1.5s infinite' }}>
+          <div style={{ maxWidth: 1400, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ fontSize: 28 }}>🚨</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>{activeAlerts.length} alerte{activeAlerts.length > 1 ? 's' : ''} SOS active{activeAlerts.length > 1 ? 's' : ''}</div>
+              <div style={{ fontSize: 12, opacity: 0.9, marginTop: 2 }}>{activeAlerts.map(a => `${a.woman?.first_name} ${a.woman?.last_name}`).join(', ')}</div>
+            </div>
+            <button onClick={() => setView({ name: 'alert', data: activeAlerts[0].id })} style={{ padding: '10px 20px', background: '#FAF6F0', color: '#8B2E26', borderRadius: 10, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>VOIR LA PREMIÈRE →</button>
           </div>
         </div>
       )}
 
-      {/* CONGÉ MATERNITÉ */}
-      {leave && (
-        <div style={{
-          marginTop: 14,
-          background: leave.isOnLeave
-            ? 'linear-gradient(135deg, #DDEBE9 0%, #B6D5D2 100%)'
-            : '#FFFFFF',
-          borderRadius: 20,
-          padding: 18,
-          border: leave.isOnLeave ? 'none' : '1px solid rgba(42,24,16,0.04)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-            <div style={{
-              width: 40, height: 40, borderRadius: 12,
-              background: leave.isOnLeave ? '#1F4341' : 'linear-gradient(135deg, #2D5F5D 0%, #1F4341 100%)',
-              color: '#FAF6F0', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 20
-            }}>📅</div>
-            <div>
-              <div style={{ fontSize: 11, color: '#1F4341', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                {tr.maternityLeave}
-              </div>
-              <div style={{ fontSize: 10, color: '#5D4037', fontStyle: 'italic' }}>{tr.leaveDuration}</div>
+      <main style={{ padding: 32, maxWidth: 1400, margin: '0 auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 24 }}>
+          <div>
+            <div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{today}</div>
+            <h1 style={{ fontSize: 36, fontWeight: 600, fontFamily: 'Georgia, serif', marginTop: 4, lineHeight: 1.1 }}>
+              Bonjour {profile.first_name},<br/>
+              <span style={{ fontStyle: 'italic', color: '#C44536' }}>
+                {stats.patients > 0 ? `${stats.patients} patiente${stats.patients > 1 ? 's' : ''} dans votre cohorte` : "aucune patiente pour l'instant"}
+              </span>
+            </h1>
+          </div>
+          <button onClick={() => setView({ name: 'enrollPatient' })} style={{
+            padding: '14px 22px', background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)',
+            color: '#FAF6F0', borderRadius: 14, fontSize: 14, fontWeight: 700,
+            border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+            boxShadow: '0 8px 20px rgba(196,69,54,0.3)', display: 'flex', alignItems: 'center', gap: 8
+          }}>
+            <span style={{ fontSize: 18 }}>+</span> Nouvelle patiente
+          </button>
+        </div>
+
+        <div style={searchHeroStyle}>
+          <div style={{ position: 'absolute', top: -50, right: -50, width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle, rgba(244,228,193,0.15) 0%, transparent 70%)' }}/>
+          <div style={{ position: 'relative' }}>
+            <div style={{ fontSize: 11, color: 'rgba(244,228,193,0.7)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Consulter une patiente</div>
+            <div style={{ fontSize: 22, fontWeight: 600, color: '#FAF6F0', marginTop: 6, fontFamily: 'Georgia, serif' }}>Saisissez l'IPU de la patiente</div>
+            <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 8, background: '#FAF6F0', borderRadius: 16, padding: 6 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: '#F4E4C1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🔍</div>
+              <input type="text" value={searchInput} onChange={(e) => setSearchInput(e.target.value.toUpperCase())} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} placeholder="SN-2026-XXXXXX" style={{ flex: 1, padding: '12px 0', fontSize: 17, fontWeight: 600, color: '#2a1810', background: 'transparent', border: 'none', outline: 'none', fontFamily: 'inherit' }}/>
+              <button onClick={handleSearch} disabled={searchInput.length < 6 || searchLoading} style={{ padding: '12px 24px', background: searchInput.length >= 6 ? 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)' : 'rgba(42,24,16,0.1)', color: searchInput.length >= 6 ? '#FAF6F0' : '#8B6F5C', borderRadius: 12, fontSize: 14, fontWeight: 700, border: 'none', cursor: searchInput.length >= 6 ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>{searchLoading ? '...' : 'Ouvrir'}</button>
             </div>
           </div>
+        </div>
 
-          {leave.isOnLeave ? (
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: '#1F4341' }}>✓ {tr.onLeave}</div>
-              <div style={{ marginTop: 8, fontSize: 13, color: '#5D4037' }}>
-                {leave.daysUntilReturn > 0
-                  ? <>Encore <strong>{leave.daysUntilReturn} {tr.days}</strong> {tr.daysUntilReturn}</>
-                  : <>Votre congé prend fin aujourd'hui</>
-                }
-              </div>
+        {searchError && <div style={{ marginTop: 16, padding: 16, background: '#FFE8E2', borderRadius: 14, color: '#8B2E26', fontSize: 13, fontWeight: 600 }}>⚠️ {searchError}</div>}
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginTop: 24 }}>
+          <StatCard icon="👥" label="Cohorte active" value={stats.patients} bg="#FFE8E2"/>
+          <StatCard icon="🤰" label="Grossesses en cours" value={stats.pregnancies} bg="#DDEBE9"/>
+          <StatCard icon="🚨" label="Alertes SOS actives" value={stats.alerts} bg="#FFE8E2" highlight={stats.alerts > 0}/>
+        </div>
+
+        {activeAlerts.length > 0 && (
+          <div style={{ marginTop: 24, background: '#FFFFFF', borderRadius: 20, padding: 20, border: '2px solid #C44536' }}>
+            <div style={{ fontSize: 11, color: '#C44536', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>🚨 Urgent</div>
+            <div style={{ fontSize: 20, fontWeight: 600, fontFamily: 'Georgia, serif', marginBottom: 16, color: '#8B2E26' }}>Alertes en cours</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {activeAlerts.map(alert => (
+                <button key={alert.id} onClick={() => setView({ name: 'alert', data: alert.id })} style={{ background: 'linear-gradient(135deg, #FFE8E2 0%, #FAF6F0 100%)', border: '2px solid #C44536', borderRadius: 14, padding: 16, display: 'flex', alignItems: 'center', gap: 14, width: '100%', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+                  <div style={{ width: 50, height: 50, borderRadius: '50%', background: '#C44536', color: '#FAF6F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, animation: 'pulse-alert 1s infinite' }}>🚨</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700 }}>{alert.woman?.first_name} {alert.woman?.last_name}</div>
+                    <div style={{ fontSize: 11, color: '#8B6F5C', marginTop: 2, fontFamily: 'monospace' }}>{alert.woman?.ipu}</div>
+                    <div style={{ fontSize: 11, color: '#8B2E26', marginTop: 4, fontWeight: 600 }}>il y a {Math.round((new Date() - new Date(alert.created_at)) / 60000)} min</div>
+                  </div>
+                  <div style={{ color: '#C44536', fontSize: 18 }}>→</div>
+                </button>
+              ))}
             </div>
-          ) : leave.daysUntilLeave > 0 ? (
-            <div>
-              <div style={{ fontSize: 14, color: '#5D4037' }}>
-                <strong style={{ color: '#1F4341', fontSize: 22, fontFamily: 'Georgia, serif' }}>{leave.daysUntilLeave}</strong>
-                {' '}{tr.daysUntilLeave}
-              </div>
-              <div style={{ marginTop: 10, padding: 10, background: '#F5F1EB', borderRadius: 10, fontSize: 11, color: '#5D4037', lineHeight: 1.5 }}>
-                <div>📌 <strong>{tr.leaveStart}</strong> : {leave.leaveStart.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
-                <div style={{ marginTop: 4 }}>📌 <strong>{tr.leaveEnd}</strong> : {leave.leaveEnd.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
-                <div style={{ marginTop: 8, fontStyle: 'italic', color: '#8B6F5C', fontSize: 10 }}>
-                  📖 {tr.leaveLegal} : {tr.leaveBeforeBirth} + {tr.leaveAfterBirth}
-                </div>
-              </div>
+          </div>
+        )}
+
+        <div style={{ marginTop: 24, background: '#FFFFFF', borderRadius: 20, padding: 20, border: '1px solid rgba(42,24,16,0.04)' }}>
+          <div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>Ma cohorte</div>
+          <div style={{ fontSize: 20, fontWeight: 600, fontFamily: 'Georgia, serif', marginBottom: 16 }}>Mes patientes</div>
+          {myPatients.length === 0 ? (
+            <div style={{ padding: 32, textAlign: 'center', color: '#8B6F5C', fontSize: 13 }}>
+              Aucune patiente. Cliquez sur <strong>"+ Nouvelle patiente"</strong> pour enrôler votre première patiente.
             </div>
           ) : (
-            <div style={{ fontSize: 13, color: '#5D4037', fontStyle: 'italic' }}>
-              Période de congé maternité passée. Reprise du travail recommandée.
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {myPatients.map(p => {
+                const preg = p.pregnancies?.find(pr => pr.status === 'en_cours')
+                const weeks = preg ? Math.floor((new Date() - new Date(preg.last_period_date)) / (1000 * 60 * 60 * 24 * 7)) : 0
+                return (
+                  <button key={p.id} onClick={() => openPatientDossier(p.id)} style={patientRowStyle}>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', color: '#FAF6F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700 }}>{p.first_name?.[0]}{p.last_name?.[0]}</div>
+                    <div style={{ flex: 1, textAlign: 'left' }}>
+                      <div style={{ fontSize: 14, fontWeight: 700 }}>{p.first_name} {p.last_name}</div>
+                      <div style={{ fontSize: 11, color: '#8B6F5C', marginTop: 2, display: 'flex', gap: 10 }}>
+                        <span style={{ fontFamily: 'monospace' }}>{p.ipu}</span>
+                        {preg ? <span>· S{weeks}</span> : <span>· Pas de grossesse</span>}
+                      </div>
+                    </div>
+                    <span style={{ color: '#B8A89A' }}>→</span>
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>
-      )}
+      </main>
     </div>
   )
 }
 
 // =====================================================
-// CARNET VIEW
+// ENROLL PATIENT VIEW
 // =====================================================
-function CarnetView({ pregnancy, consultations, tr }) {
-  if (!pregnancy) return <div style={{ padding: 24, textAlign: 'center' }}>{tr.pregnancyComplete}</div>
+function EnrollPatientView({ profile, setView, openPatientDossier }) {
+  const [tab, setTab] = useState('create')
 
   return (
-    <div style={{ padding: '20px 18px 100px' }}>
-      <div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{tr.medicalRecord}</div>
-      <div style={{ fontSize: 26, fontFamily: 'Georgia, serif', fontWeight: 600, color: '#2a1810', marginTop: 2 }}>Mon carnet</div>
-
-      {consultations.length === 0 ? (
-        <div style={{ marginTop: 24, padding: 24, background: '#FFFFFF', borderRadius: 16, textAlign: 'center', border: '1px solid rgba(42,24,16,0.04)' }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>👩🏾‍⚕️</div>
-          <div style={{ fontSize: 14, fontWeight: 600 }}>{tr.noConsultations}</div>
-          <div style={{ fontSize: 12, color: '#5D4037', lineHeight: 1.5, marginTop: 8 }}>{tr.waitingForFirstCPN}</div>
+    <div style={pageStyle}>
+      <header style={headerStyle}>
+        <button onClick={() => setView({ name: 'home' })} style={backButtonStyle}>← Retour</button>
+        <div style={{ flex: 1, marginLeft: 16 }}>
+          <div style={{ fontSize: 20, fontWeight: 700, fontFamily: 'Georgia, serif' }}>Enrôler une patiente</div>
+          <div style={{ fontSize: 11, color: '#8B6F5C', marginTop: 2 }}>3 façons d'ajouter une patiente</div>
         </div>
-      ) : (
-        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {consultations.map(c => (
-            <div key={c.id} style={{ background: '#FFFFFF', borderRadius: 16, padding: 16, border: '1px solid rgba(42,24,16,0.04)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>{tr.consultationFrom} {new Date(c.consultation_date).toLocaleDateString('fr-FR')}</div>
-                  <div style={{ fontSize: 10, color: '#8B6F5C', marginTop: 2 }}>{tr.weekShort}{c.gestational_age_weeks || '—'}</div>
+      </header>
+      <main style={{ padding: '24px 32px', maxWidth: 900, margin: '0 auto' }}>
+        <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid rgba(42,24,16,0.08)', marginBottom: 24 }}>
+          {[
+            { id: 'create', label: '📝 Créer un nouveau dossier', desc: 'La patiente est nouvelle' },
+            { id: 'existing', label: '🔍 La patiente a déjà Yaay', desc: 'Avec son IPU' },
+            { id: 'search', label: '👥 Rechercher', desc: 'Anti-doublons' },
+          ].map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)} style={{
+              padding: '14px 18px', fontSize: 13, fontWeight: 600,
+              color: tab === t.id ? '#C44536' : '#8B6F5C',
+              borderBottom: tab === t.id ? '2px solid #C44536' : '2px solid transparent',
+              marginBottom: -1, background: 'none', border: 'none', cursor: 'pointer',
+              fontFamily: 'inherit', textAlign: 'left'
+            }}>
+              <div>{t.label}</div>
+              <div style={{ fontSize: 10, color: '#8B6F5C', marginTop: 2, fontWeight: 400 }}>{t.desc}</div>
+            </button>
+          ))}
+        </div>
+
+        {tab === 'create' && <CreatePatientForm profile={profile} setView={setView}/>}
+        {tab === 'existing' && <RequestExistingPatientForm profile={profile} setView={setView} openPatientDossier={openPatientDossier}/>}
+        {tab === 'search' && <SearchExistingPatientForm profile={profile} openPatientDossier={openPatientDossier}/>}
+      </main>
+    </div>
+  )
+}
+
+function CreatePatientForm({ profile, setView }) {
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [dob, setDob] = useState('')
+  const [city, setCity] = useState('')
+  const [region, setRegion] = useState('')
+  const [bloodType, setBloodType] = useState('')
+  const [language, setLanguage] = useState('fr')
+  const [gravidity, setGravidity] = useState('1')
+  const [parity, setParity] = useState('0')
+  const [hasHypertension, setHasHypertension] = useState(false)
+  const [hasDiabetes, setHasDiabetes] = useState(false)
+  const [hasHiv, setHasHiv] = useState(false)
+  const [hasSickleCell, setHasSickleCell] = useState(false)
+  const [hasPreviousCsection, setHasPreviousCsection] = useState(false)
+  const [hasPreviousHemorrhage, setHasPreviousHemorrhage] = useState(false)
+  const [hasPreviousPreeclampsia, setHasPreviousPreeclampsia] = useState(false)
+  const [hasPregnancy, setHasPregnancy] = useState(true)
+  const [lastPeriod, setLastPeriod] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [success, setSuccess] = useState(null)
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    try {
+      const { data: result, error: rpcError } = await supabase.rpc('create_patient_by_pro', {
+        p_first_name: firstName, p_last_name: lastName, p_phone: '+221' + phone,
+        p_date_of_birth: dob || null, p_city: city || null, p_region: region || null,
+        p_blood_type: bloodType || null, p_preferred_language: language
+      })
+      if (rpcError) throw rpcError
+      if (!result || result.length === 0) throw new Error('La création a échoué')
+      const newPatient = result[0]
+
+      if (hasPregnancy && lastPeriod) {
+        const ddr = new Date(lastPeriod)
+        const term = new Date(ddr)
+        term.setDate(term.getDate() + 280)
+        const { error: pregError } = await supabase.from('pregnancies').insert({
+          woman_id: newPatient.patient_id, status: 'en_cours',
+          last_period_date: lastPeriod, expected_delivery_date: term.toISOString().split('T')[0],
+          gravidity: parseInt(gravidity), parity: parseInt(parity),
+          blood_type: bloodType || null,
+          has_hypertension: hasHypertension, has_diabetes: hasDiabetes,
+          has_hiv: hasHiv, has_sickle_cell: hasSickleCell,
+          has_previous_csection: hasPreviousCsection, has_previous_hemorrhage: hasPreviousHemorrhage,
+          has_previous_preeclampsia: hasPreviousPreeclampsia,
+          current_risk_level: (hasHypertension || hasDiabetes || hasPreviousHemorrhage || hasPreviousPreeclampsia) ? 'modere' : 'faible',
+          created_by: profile.id
+        })
+        if (pregError) throw pregError
+      }
+      setSuccess({ ipu: newPatient.ipu, patientId: newPatient.patient_id })
+      setLoading(false)
+    } catch (err) { setError(err.message); setLoading(false) }
+  }
+
+  if (success) {
+    return (
+      <div style={{ ...cardStyle, textAlign: 'center', padding: 40 }}>
+        <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg, #2D5F5D 0%, #1F4341 100%)', color: '#FAF6F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, margin: '0 auto', marginBottom: 20 }}>✓</div>
+        <h2 style={{ fontSize: 26, fontFamily: 'Georgia, serif', fontWeight: 600 }}>Patiente créée !</h2>
+        <p style={{ fontSize: 14, color: '#5D4037', marginTop: 12 }}>{firstName} {lastName} est dans votre cohorte.</p>
+        <div style={{ marginTop: 20, padding: 16, background: '#F4E4C1', borderRadius: 14 }}>
+          <div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>IPU à donner à la patiente</div>
+          <div style={{ fontSize: 28, fontWeight: 700, fontFamily: 'monospace', color: '#2a1810', marginTop: 6 }}>{success.ipu}</div>
+        </div>
+        <div style={{ marginTop: 20, display: 'flex', gap: 10 }}>
+          <button onClick={() => setView({ name: 'patient', data: success.patientId })} style={{ ...primaryButtonStyle, flex: 1 }}>Voir le dossier →</button>
+          <button onClick={() => setView({ name: 'home' })} style={{ ...primaryButtonStyle, flex: 1, background: '#F5F1EB', color: '#5D4037', boxShadow: 'none' }}>Retour</button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div style={cardStyle}>
+        <div style={{ fontSize: 18, fontWeight: 600, fontFamily: 'Georgia, serif', marginBottom: 16 }}>1. Identité</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <div><label style={labelStyle}>Prénom *</label><input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} required style={inputStyle}/></div>
+          <div><label style={labelStyle}>Nom *</label><input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} required style={inputStyle}/></div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 14 }}>
+          <div>
+            <label style={labelStyle}>Téléphone *</label>
+            <div style={{ display: 'flex', alignItems: 'center', background: '#FFFFFF', borderRadius: 12, border: '2px solid rgba(42,24,16,0.08)', overflow: 'hidden' }}>
+              <span style={{ padding: '11px 12px', fontWeight: 600, borderRight: '1px solid rgba(42,24,16,0.1)', fontSize: 13 }}>🇸🇳 +221</span>
+              <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="77 123 45 67" required style={{ ...inputStyle, border: 'none' }}/>
+            </div>
+          </div>
+          <div><label style={labelStyle}>Date de naissance</label><input type="date" value={dob} onChange={(e) => setDob(e.target.value)} style={inputStyle}/></div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginTop: 14 }}>
+          <div><label style={labelStyle}>Ville</label><input type="text" value={city} onChange={(e) => setCity(e.target.value)} style={inputStyle}/></div>
+          <div><label style={labelStyle}>Région</label>
+            <select value={region} onChange={(e) => setRegion(e.target.value)} style={inputStyle}>
+              <option value="">—</option>
+              {['Dakar','Thiès','Diourbel','Fatick','Kaffrine','Kaolack','Kédougou','Kolda','Louga','Matam','Saint-Louis','Sédhiou','Tambacounda','Ziguinchor'].map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+          <div><label style={labelStyle}>Groupe sanguin</label>
+            <select value={bloodType} onChange={(e) => setBloodType(e.target.value)} style={inputStyle}>
+              <option value="">—</option>
+              {['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ ...cardStyle, marginTop: 16 }}>
+        <div style={{ fontSize: 18, fontWeight: 600, fontFamily: 'Georgia, serif', marginBottom: 16 }}>2. Antécédents</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <div><label style={labelStyle}>Gestité (G)</label><input type="number" min="1" value={gravidity} onChange={(e) => setGravidity(e.target.value)} style={inputStyle}/></div>
+          <div><label style={labelStyle}>Parité (P)</label><input type="number" min="0" value={parity} onChange={(e) => setParity(e.target.value)} style={inputStyle}/></div>
+        </div>
+        <div style={{ marginTop: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <CheckboxField label="HTA" checked={hasHypertension} onChange={setHasHypertension}/>
+            <CheckboxField label="Diabète" checked={hasDiabetes} onChange={setHasDiabetes}/>
+            <CheckboxField label="VIH" checked={hasHiv} onChange={setHasHiv}/>
+            <CheckboxField label="Drépanocytose" checked={hasSickleCell} onChange={setHasSickleCell}/>
+            <CheckboxField label="Antécédent césarienne" checked={hasPreviousCsection} onChange={setHasPreviousCsection}/>
+            <CheckboxField label="Antécédent HPP" checked={hasPreviousHemorrhage} onChange={setHasPreviousHemorrhage}/>
+            <CheckboxField label="Pré-éclampsie" checked={hasPreviousPreeclampsia} onChange={setHasPreviousPreeclampsia}/>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ ...cardStyle, marginTop: 16 }}>
+        <div style={{ fontSize: 18, fontWeight: 600, fontFamily: 'Georgia, serif', marginBottom: 16 }}>3. Grossesse actuelle</div>
+        <div style={{ display: 'flex', gap: 4, background: '#F5F1EB', borderRadius: 10, padding: 3, marginBottom: 14 }}>
+          <button type="button" onClick={() => setHasPregnancy(true)} style={{ flex: 1, padding: 10, borderRadius: 8, background: hasPregnancy ? '#C44536' : 'transparent', color: hasPregnancy ? '#FAF6F0' : '#5D4037', fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Grossesse en cours</button>
+          <button type="button" onClick={() => setHasPregnancy(false)} style={{ flex: 1, padding: 10, borderRadius: 8, background: !hasPregnancy ? '#FFFFFF' : 'transparent', color: !hasPregnancy ? '#2a1810' : '#5D4037', fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Pas de grossesse</button>
+        </div>
+        {hasPregnancy && (
+          <div>
+            <label style={labelStyle}>DDR *</label>
+            <input type="date" value={lastPeriod} onChange={(e) => setLastPeriod(e.target.value)} required={hasPregnancy} style={inputStyle}/>
+          </div>
+        )}
+      </div>
+
+      {error && <div style={{ marginTop: 16, padding: 14, background: '#FFE8E2', borderRadius: 12, color: '#8B2E26', fontSize: 13, fontWeight: 600 }}>⚠️ {error}</div>}
+
+      <div style={{ marginTop: 20, display: 'flex', gap: 10 }}>
+        <button type="button" onClick={() => setView({ name: 'home' })} style={{ flex: 1, padding: 14, background: '#F5F1EB', color: '#5D4037', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Annuler</button>
+        <button type="submit" disabled={loading} style={{ flex: 2, ...primaryButtonStyle, background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', boxShadow: '0 6px 16px rgba(196,69,54,0.3)', opacity: loading ? 0.6 : 1 }}>
+          {loading ? '...' : '✓ Créer la patiente'}
+        </button>
+      </div>
+    </form>
+  )
+}
+
+function RequestExistingPatientForm({ profile, setView, openPatientDossier }) {
+  const [ipu, setIpu] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  async function handleSearch(e) {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    try {
+      const { data, error } = await supabase.from('profiles')
+        .select('id').eq('ipu', ipu.trim().toUpperCase())
+        .eq('role', 'femme').maybeSingle()
+      if (error) throw error
+      if (!data) {
+        setError(`Aucune patiente trouvée avec l'IPU ${ipu.toUpperCase()}`)
+      } else {
+        openPatientDossier(data.id)
+      }
+    } catch (err) { setError(err.message) } finally { setLoading(false) }
+  }
+
+  return (
+    <div style={cardStyle}>
+      <div style={{ fontSize: 18, fontWeight: 600, fontFamily: 'Georgia, serif', marginBottom: 8 }}>Patiente déjà inscrite sur Yaay</div>
+      <p style={{ fontSize: 13, color: '#5D4037', marginBottom: 16 }}>
+        Tapez l'IPU. Si vous avez déjà l'accès, le dossier s'ouvre. Sinon, vous serez redirigé(e) vers une demande de consentement.
+      </p>
+      <form onSubmit={handleSearch}>
+        <label style={labelStyle}>IPU de la patiente</label>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input type="text" value={ipu} onChange={(e) => setIpu(e.target.value.toUpperCase())} placeholder="SN-2026-XXXXXX" required style={{ ...inputStyle, fontFamily: 'monospace', flex: 1 }}/>
+          <button type="submit" disabled={loading || ipu.length < 6} style={{ padding: '12px 24px', background: ipu.length >= 6 ? 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)' : '#F5F1EB', color: ipu.length >= 6 ? '#FAF6F0' : '#8B6F5C', borderRadius: 12, fontSize: 13, fontWeight: 700, border: 'none', cursor: ipu.length >= 6 ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
+            {loading ? '...' : 'Ouvrir'}
+          </button>
+        </div>
+      </form>
+      {error && <div style={{ marginTop: 14, padding: 12, background: '#FFE8E2', borderRadius: 10, color: '#8B2E26', fontSize: 12, fontWeight: 600 }}>⚠️ {error}</div>}
+    </div>
+  )
+}
+
+function SearchExistingPatientForm({ profile, openPatientDossier }) {
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  async function handleSearch(e) {
+    e.preventDefault()
+    if (query.length < 2) return
+    setLoading(true)
+    const { data } = await supabase.from('profiles')
+      .select('id, first_name, last_name, ipu, phone, city')
+      .eq('role', 'femme')
+      .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,phone.ilike.%${query}%`)
+      .limit(20)
+    setResults(data || [])
+    setLoading(false)
+  }
+
+  return (
+    <div>
+      <div style={cardStyle}>
+        <div style={{ fontSize: 18, fontWeight: 600, fontFamily: 'Georgia, serif', marginBottom: 8 }}>Rechercher dans la base</div>
+        <p style={{ fontSize: 13, color: '#5D4037', marginBottom: 16 }}>
+          Évite les doublons. Si la patiente existe et que vous n'avez pas l'accès, vous serez redirigé(e) vers une demande de consentement.
+        </p>
+        <form onSubmit={handleSearch}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Nom, prénom ou téléphone" style={{ ...inputStyle, flex: 1 }}/>
+            <button type="submit" disabled={loading || query.length < 2} style={{ padding: '12px 24px', background: query.length >= 2 ? 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)' : '#F5F1EB', color: query.length >= 2 ? '#FAF6F0' : '#8B6F5C', borderRadius: 12, fontSize: 13, fontWeight: 700, border: 'none', cursor: query.length >= 2 ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
+              {loading ? '...' : '🔍 Rechercher'}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {results.length > 0 && (
+        <div style={{ ...cardStyle, marginTop: 16 }}>
+          <div style={{ fontSize: 12, color: '#8B6F5C', marginBottom: 12 }}>{results.length} résultat{results.length > 1 ? 's' : ''}</div>
+          {results.map(p => (
+            <button key={p.id} onClick={() => openPatientDossier(p.id)} style={{ ...patientRowStyle, marginBottom: 8 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', color: '#FAF6F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700 }}>{p.first_name?.[0]}{p.last_name?.[0]}</div>
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <div style={{ fontSize: 14, fontWeight: 700 }}>{p.first_name} {p.last_name}</div>
+                <div style={{ fontSize: 11, color: '#8B6F5C', marginTop: 2, display: 'flex', gap: 10 }}>
+                  <span style={{ fontFamily: 'monospace' }}>{p.ipu}</span>
+                  <span>· {p.phone}</span>
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-                <MiniVital label={tr.weight} value={c.weight_kg || '—'} unit="kg"/>
-                <MiniVital label={tr.bp} value={c.blood_pressure_systolic && c.blood_pressure_diastolic ? `${c.blood_pressure_systolic}/${c.blood_pressure_diastolic}` : '—'} unit=""/>
-                <MiniVital label={tr.uh} value={c.uterine_height_cm || '—'} unit="cm"/>
-                <MiniVital label={tr.bcf} value={c.fetal_heart_rate || '—'} unit="bpm"/>
-              </div>
-              {c.observations && <div style={{ marginTop: 12, padding: 10, background: '#F5F1EB', borderRadius: 10, fontSize: 11, color: '#5D4037', fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>{c.observations}</div>}
-            </div>
+              <span style={{ color: '#B8A89A' }}>→</span>
+            </button>
           ))}
         </div>
       )}
-    </div>
-  )
-}
 
-function MiniVital({ label, value, unit }) {
-  return (
-    <div style={{ background: '#F5F1EB', borderRadius: 10, padding: 8, textAlign: 'center' }}>
-      <div style={{ fontSize: 9, color: '#8B6F5C', fontWeight: 600, textTransform: 'uppercase' }}>{label}</div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, justifyContent: 'center', marginTop: 2 }}>
-        <span style={{ fontSize: 14, fontFamily: 'Georgia, serif', fontWeight: 700 }}>{value}</span>
-        {unit && <span style={{ fontSize: 9, color: '#8B6F5C' }}>{unit}</span>}
-      </div>
-    </div>
-  )
-}
-
-// =====================================================
-// ADVICE VIEW (NOUVEAU - Conseils nutrition + santé)
-// =====================================================
-function AdviceView({ pregnancy, tr }) {
-  const [section, setSection] = useState('nutrition')
-
-  if (!pregnancy) {
-    return (
-      <div style={{ padding: 24, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70%' }}>
-        <div style={{ fontSize: 60, marginBottom: 16 }}>🌿</div>
-        <h2 style={{ fontSize: 18, fontFamily: 'Georgia, serif', marginBottom: 12 }}>Conseils disponibles</h2>
-        <p style={{ fontSize: 13, color: '#5D4037', lineHeight: 1.5 }}>Une fois votre grossesse enregistrée, vous recevrez des conseils adaptés à chaque trimestre.</p>
-      </div>
-    )
-  }
-
-  const weeks = Math.floor((new Date() - new Date(pregnancy.last_period_date)) / (1000 * 60 * 60 * 24 * 7))
-  const trimester = weeks <= 13 ? 't1' : weeks <= 27 ? 't2' : 't3'
-  const trimesterLabel = trimester === 't1' ? tr.trimester1 : trimester === 't2' ? tr.trimester2 : tr.trimester3
-  const content = adviceContent[trimester]
-
-  return (
-    <div style={{ padding: '20px 18px 100px' }}>
-      <div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{tr.adviceTitle}</div>
-      <div style={{ fontSize: 24, fontFamily: 'Georgia, serif', fontWeight: 600, color: '#2a1810', marginTop: 2 }}>
-        {tr.weekTitle} <span style={{ color: '#C44536', fontStyle: 'italic' }}>S{weeks}</span>
-      </div>
-      <div style={{ fontSize: 12, color: '#5D4037', marginTop: 4 }}>{tr.adviceSubtitle}</div>
-
-      {/* Bandeau trimestre */}
-      <div style={{
-        marginTop: 16, padding: 16,
-        background: 'linear-gradient(135deg, #2D5F5D 0%, #1F4341 100%)',
-        color: '#FAF6F0', borderRadius: 18,
-        display: 'flex', alignItems: 'center', gap: 14
-      }}>
-        <div style={{ width: 50, height: 50, borderRadius: '50%', background: 'rgba(244,228,193,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
-          {trimester === 't1' ? '🌱' : trimester === 't2' ? '🌸' : '🌻'}
+      {!loading && query.length >= 2 && results.length === 0 && (
+        <div style={{ ...cardStyle, marginTop: 16, textAlign: 'center', padding: 32 }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
+          <div style={{ fontSize: 14, fontWeight: 600 }}>Aucune patiente trouvée pour "{query}"</div>
         </div>
-        <div>
-          <div style={{ fontSize: 11, opacity: 0.7, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{tr.trimesterTitle}</div>
-          <div style={{ fontSize: 18, fontFamily: 'Georgia, serif', fontWeight: 700 }}>{trimesterLabel}</div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div style={{ marginTop: 16, display: 'flex', gap: 4, background: '#F5F1EB', borderRadius: 12, padding: 3 }}>
-        <button onClick={() => setSection('nutrition')} style={{
-          flex: 1, padding: '10px 8px', borderRadius: 9,
-          background: section === 'nutrition' ? '#FFFFFF' : 'transparent',
-          color: section === 'nutrition' ? '#2a1810' : '#5D4037',
-          fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-          boxShadow: section === 'nutrition' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none'
-        }}>{tr.nutritionTab}</button>
-        <button onClick={() => setSection('physical')} style={{
-          flex: 1, padding: '10px 8px', borderRadius: 9,
-          background: section === 'physical' ? '#FFFFFF' : 'transparent',
-          color: section === 'physical' ? '#2a1810' : '#5D4037',
-          fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-          boxShadow: section === 'physical' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none'
-        }}>{tr.physicalTab}</button>
-      </div>
-
-      {/* Contenu */}
-      <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {(section === 'nutrition' ? content.nutrition : content.physical).map((item, i) => (
-          <div key={i} style={{
-            background: '#FFFFFF', borderRadius: 16, padding: 14,
-            border: '1px solid rgba(42,24,16,0.04)',
-            display: 'flex', gap: 12, alignItems: 'flex-start'
-          }}>
-            <div style={{
-              width: 44, height: 44, borderRadius: 12,
-              background: '#F4E4C1',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 22, flexShrink: 0
-            }}>{item.icon}</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#2a1810' }}>{item.title}</div>
-              <div style={{ fontSize: 12, color: '#5D4037', marginTop: 4, lineHeight: 1.5 }}>{item.text}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Avertissement trimestre */}
-      <div style={{
-        marginTop: 16, padding: 14,
-        background: 'linear-gradient(135deg, #FFE8E2 0%, #F4E4C1 100%)',
-        borderRadius: 14,
-        border: '1px solid rgba(196,69,54,0.2)'
-      }}>
-        <div style={{ fontSize: 11, color: '#8B2E26', fontWeight: 700, marginBottom: 4 }}>⚠️ À surveiller à ce stade</div>
-        <div style={{ fontSize: 12, color: '#5D4037', lineHeight: 1.5 }}>{content.warnings}</div>
-      </div>
-
-      {/* Note de bas de page */}
-      <div style={{ marginTop: 16, padding: 12, background: '#F5F1EB', borderRadius: 12, fontSize: 11, color: '#8B6F5C', fontStyle: 'italic', lineHeight: 1.5, textAlign: 'center' }}>
-        💡 Ces conseils sont génériques. Suivez toujours les recommandations spécifiques de votre sage-femme.
-      </div>
+      )}
     </div>
   )
 }
 
 // =====================================================
-// SOS VIEW (inchangé)
+// PATIENT FILE VIEW - Chargement en 2 temps + realtime
 // =====================================================
-function SOSView({ profile, activeAlert, emergencyContacts, midwives, tr, onAlertChange }) {
-  const [step, setStep] = useState('idle')
-  const [error, setError] = useState(null)
+function PatientFileView({ profile, patientId, setView }) {
+  const [patient, setPatient] = useState(null)
+  const [currentPregnancy, setCurrentPregnancy] = useState(null)
+  const [pastPregnancies, setPastPregnancies] = useState([])
+  const [consultations, setConsultations] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [tab, setTab] = useState('overview')
 
-  useEffect(() => {
-    if (activeAlert) setStep('active')
-    else if (step === 'active') setStep('idle')
-  }, [activeAlert])
+  async function loadPatient() {
+    setLoading(true)
 
-  async function triggerSOS() {
-    setStep('locating')
-    setError(null)
+    // 1. Profil
+    const { data: p } = await supabase.from('profiles').select('*').eq('id', patientId).single()
+    setPatient(p)
 
-    if (!navigator.geolocation) {
-      setError(tr.sosNoLocation); setStep('error'); return
+    // 2. Grossesses
+    const { data: pregs } = await supabase.from('pregnancies')
+      .select('*')
+      .eq('woman_id', patientId)
+      .order('last_period_date', { ascending: false })
+
+    if (pregs) {
+      const current = pregs.find(p => p.status === 'en_cours')
+      setCurrentPregnancy(current)
+      setPastPregnancies(pregs.filter(p => p.status !== 'en_cours'))
+
+      // 3. CPN de la grossesse en cours (en 2 temps - pas de jointure)
+      if (current) {
+        const { data: cpns } = await supabase.from('consultations')
+          .select('*')
+          .eq('pregnancy_id', current.id)
+          .order('consultation_date', { ascending: false })
+
+        // Charger les noms des pros qui ont fait les CPN
+        if (cpns && cpns.length > 0) {
+          const proIds = [...new Set(cpns.map(c => c.performed_by).filter(Boolean))]
+          const { data: pros } = await supabase
+            .from('profiles')
+            .select('id, first_name, last_name')
+            .in('id', proIds)
+
+          const cpnsWithPros = cpns.map(c => ({
+            ...c,
+            performed_by_profile: pros?.find(pro => pro.id === c.performed_by)
+          }))
+          setConsultations(cpnsWithPros)
+        } else {
+          setConsultations([])
+        }
+      } else {
+        setConsultations([])
+      }
     }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude, accuracy } = position.coords
-        setStep('sending')
-        try {
-          const { error: insertError } = await supabase.from('alerts').insert({
-            woman_id: profile.id, type: 'sos', status: 'active',
-            latitude, longitude, gps_accuracy: accuracy,
-            message: 'Alerte SOS déclenchée depuis l\'application',
-            husband_notified: emergencyContacts.length > 0,
-            midwife_notified: midwives.length > 0,
-            ambulance_notified: false,
-          })
-          if (insertError) throw insertError
-          setTimeout(() => onAlertChange(), 500)
-        } catch (err) { setError(err.message); setStep('error') }
-      },
-      (geoError) => { setError(`Géolocalisation refusée : ${geoError.message}`); setStep('error') },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-    )
+    setLoading(false)
   }
 
-  async function cancelAlert() {
-    if (!activeAlert) return
-    if (!confirm(`${tr.sosCancel} ?`)) return
-    await supabase.from('alerts').update({ status: 'resolue', resolved_at: new Date().toISOString(), resolution_notes: 'Annulée par la patiente' }).eq('id', activeAlert.id)
-    setStep('idle')
-    onAlertChange()
-  }
+  useEffect(() => { loadPatient() }, [patientId])
 
-  if (step === 'active' && activeAlert) {
-    return (
-      <div style={{ flex: 1, background: 'linear-gradient(180deg, #C44536 0%, #8B2E26 100%)', color: '#FAF6F0', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <div style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(244,228,193,0.2)', flexShrink: 0, background: 'rgba(0,0,0,0.1)' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>🚨 {tr.activeAlert}</div>
-          <button onClick={cancelAlert} style={{ padding: '8px 14px', background: '#FAF6F0', color: '#8B2E26', borderRadius: 10, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✕ {tr.sosCancel}</button>
-        </div>
-        <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
-          <div style={{ textAlign: 'center', padding: '12px 0' }}>
-            <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(244,228,193,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', border: '3px solid #FAF6F0', fontSize: 36 }}>✓</div>
-            <div style={{ fontSize: 26, fontFamily: 'Georgia, serif', fontWeight: 600, marginTop: 16 }}>{tr.sosSent}</div>
-            <div style={{ fontSize: 12, color: 'rgba(244,228,193,0.85)', marginTop: 6 }}>{tr.sosSentDesc}</div>
-          </div>
-          <div style={{ background: 'rgba(244,228,193,0.95)', color: '#2a1810', borderRadius: 16, padding: 14, marginTop: 16 }}>
-            <div style={{ fontSize: 10, color: '#8B6F5C', fontWeight: 700, textTransform: 'uppercase', marginBottom: 6 }}>📍 {tr.sosYourLocation}</div>
-            <div style={{ fontSize: 12, fontFamily: 'monospace', fontWeight: 600 }}>{activeAlert.latitude?.toFixed(6)}, {activeAlert.longitude?.toFixed(6)}</div>
-            <a href={`https://www.google.com/maps?q=${activeAlert.latitude},${activeAlert.longitude}`} target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginTop: 8, padding: '8px 12px', background: '#2D5F5D', color: '#FAF6F0', borderRadius: 8, fontSize: 11, fontWeight: 600, textAlign: 'center', textDecoration: 'none' }}>Voir sur Google Maps →</a>
-          </div>
-          <button onClick={cancelAlert} style={{ marginTop: 16, marginBottom: 10, width: '100%', padding: 14, background: 'rgba(244,228,193,0.15)', color: '#FAF6F0', borderRadius: 12, border: '2px solid rgba(244,228,193,0.5)', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✕ {tr.sosCancel}</button>
-        </div>
-      </div>
-    )
-  }
+  // Realtime sur cette patiente
+  useEffect(() => {
+    if (!patientId) return
+    const channel = supabase.channel('patient-' + patientId)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'consultations' }, () => loadPatient())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pregnancies', filter: `woman_id=eq.${patientId}` }, () => loadPatient())
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [patientId])
 
-  if (step === 'locating' || step === 'sending') {
-    return (
-      <div style={{ flex: 1, padding: 24, background: 'linear-gradient(180deg, #FAF6F0 0%, #FFE8E2 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ width: 100, height: 100, borderRadius: '50%', background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', color: '#FAF6F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, animation: 'pulse 1s infinite' }}>{step === 'locating' ? '📍' : '📡'}</div>
-        <div style={{ marginTop: 24, fontSize: 18, fontFamily: 'Georgia, serif', fontWeight: 600 }}>{step === 'locating' ? tr.sosLocating : tr.sosSending}</div>
-      </div>
-    )
-  }
+  if (loading) return <LoadingScreen />
+  if (!patient) return <div>Patiente introuvable.</div>
 
-  if (step === 'error') {
-    return (
-      <div style={{ flex: 1, padding: 24, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <div style={{ fontSize: 60, marginBottom: 16 }}>⚠️</div>
-        <h2 style={{ fontSize: 22, fontFamily: 'Georgia, serif', marginBottom: 12, color: '#8B2E26' }}>{tr.sosError}</h2>
-        <p style={{ fontSize: 13, color: '#5D4037', marginBottom: 24 }}>{error}</p>
-        <button onClick={() => setStep('idle')} style={mPrimaryButtonStyle}>Réessayer</button>
-      </div>
-    )
-  }
+  const weeks = currentPregnancy ? Math.floor((new Date() - new Date(currentPregnancy.last_period_date)) / (1000 * 60 * 60 * 24 * 7)) : null
+  const age = patient.date_of_birth ? Math.floor((new Date() - new Date(patient.date_of_birth)) / (1000 * 60 * 60 * 24 * 365.25)) : null
 
   return (
-    <div style={{ flex: 1, padding: 20, background: 'linear-gradient(180deg, #FAF6F0 0%, #FFE8E2 100%)', overflowY: 'auto' }}>
-      <div style={{ textAlign: 'center' }}>
-        <h2 style={{ fontSize: 22, fontFamily: 'Georgia, serif', fontWeight: 600 }}>{tr.sosTitle}</h2>
-        <p style={{ fontSize: 12, color: '#5D4037', marginTop: 6, lineHeight: 1.4, maxWidth: 280, margin: '6px auto 0' }}>{tr.sosSubtitle}</p>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24 }}>
-        <button onClick={triggerSOS} style={{ width: 180, height: 180, borderRadius: '50%', background: 'radial-gradient(circle at 30% 30%, #E85D4D 0%, #C44536 50%, #8B2E26 100%)', color: '#FAF6F0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: '0 20px 50px rgba(196,69,54,0.5)', border: '6px solid #FAF6F0', cursor: 'pointer', fontFamily: 'inherit' }}>
-          <div style={{ fontSize: 44 }}>⚠️</div>
-          <div style={{ fontSize: 22, fontFamily: 'Georgia, serif', fontWeight: 700, marginTop: 4 }}>SOS</div>
-        </button>
-      </div>
-      <p style={{ marginTop: 18, fontSize: 13, color: '#8B2E26', fontWeight: 600, textAlign: 'center' }}>{tr.sosButton}</p>
-      <div style={{ marginTop: 24, background: '#FFFFFF', borderRadius: 14, padding: 14, border: '1px solid rgba(42,24,16,0.06)' }}>
-        <div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 700, textTransform: 'uppercase', marginBottom: 10 }}>⚠️ {tr.sosWhenToUse}</div>
-        {[tr.sosUseCase1, tr.sosUseCase2, tr.sosUseCase3, tr.sosUseCase4, tr.sosUseCase5].map((useCase, i) => (
-          <div key={i} style={{ fontSize: 12, padding: '5px 0', display: 'flex', gap: 8 }}>
-            <span style={{ color: '#C44536', fontWeight: 700 }}>•</span>{useCase}
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// =====================================================
-// MORE VIEW (consentements)
-// =====================================================
-function MoreView({ profile, pendingRequests, midwives, tr, onChange }) {
-  async function handleLogout() { await supabase.auth.signOut() }
-  const [actionLoading, setActionLoading] = useState(null)
-  const [error, setError] = useState(null)
-
-  async function acceptRequest(request) {
-    if (!confirm(`${tr.confirmAccept}\n\n${request.requester?.first_name} ${request.requester?.last_name} ${tr.confirmAcceptDesc}`)) return
-    setActionLoading(request.id)
-    setError(null)
-    try {
-      const { error: updateError } = await supabase.from('consent_requests').update({ status: 'accorde', responded_at: new Date().toISOString() }).eq('id', request.id)
-      if (updateError) throw updateError
-
-      const { error: consentError } = await supabase.from('consents').insert([
-        { woman_id: profile.id, granted_to: request.requested_by, scope: request.scope || 'lecture_dossier', status: 'accorde', granted_at: new Date().toISOString() },
-        { woman_id: profile.id, granted_to: request.requested_by, scope: 'ecriture_dossier', status: 'accorde', granted_at: new Date().toISOString() }
-      ])
-      if (consentError) throw consentError
-      onChange()
-    } catch (err) { setError(err.message) } finally { setActionLoading(null) }
-  }
-
-  async function refuseRequest(request) {
-    if (!confirm(`${tr.confirmRefuse}`)) return
-    setActionLoading(request.id)
-    try {
-      await supabase.from('consent_requests').update({ status: 'refuse', responded_at: new Date().toISOString() }).eq('id', request.id)
-      onChange()
-    } finally { setActionLoading(null) }
-  }
-
-  return (
-    <div style={{ padding: '20px 18px 100px' }}>
-      <div style={{ fontSize: 26, fontFamily: 'Georgia, serif', fontWeight: 600, color: '#2a1810' }}>Mon compte</div>
-
-      <div style={{ marginTop: 20, padding: 16, background: '#FFFFFF', borderRadius: 16, border: '1px solid rgba(42,24,16,0.04)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 50, height: 50, borderRadius: '50%', background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', color: '#FAF6F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700 }}>{profile.first_name?.[0]}{profile.last_name?.[0]}</div>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 700 }}>{profile.first_name} {profile.last_name}</div>
-            <div style={{ fontSize: 12, color: '#8B6F5C', marginTop: 2, fontFamily: 'monospace' }}>{profile.ipu}</div>
+    <div style={pageStyle}>
+      <header style={headerStyle}>
+        <button onClick={() => setView({ name: 'home' })} style={backButtonStyle}>← Retour</button>
+        <div style={{ flex: 1, marginLeft: 16 }}>
+          <div style={{ fontSize: 20, fontWeight: 700, fontFamily: 'Georgia, serif' }}>{patient.first_name} {patient.last_name}</div>
+          <div style={{ fontSize: 11, color: '#8B6F5C', display: 'flex', gap: 10, marginTop: 2 }}>
+            <span style={{ fontFamily: 'monospace' }}>{patient.ipu}</span>
+            {age && <span>· {age} ans</span>}
+            {currentPregnancy && <span>· G{currentPregnancy.gravidity}P{currentPregnancy.parity} · S{weeks}</span>}
           </div>
         </div>
-      </div>
+        {currentPregnancy ? (
+          <button onClick={() => setView({ name: 'newCPN', data: { pregnancyId: currentPregnancy.id, patientId } })} style={{ padding: '12px 18px', background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', color: '#FAF6F0', borderRadius: 12, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>➕ Nouvelle CPN</button>
+        ) : (
+          <button onClick={() => setView({ name: 'newPregnancy', data: patientId })} style={{ padding: '12px 18px', background: 'linear-gradient(135deg, #2D5F5D 0%, #1F4341 100%)', color: '#FAF6F0', borderRadius: 12, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>+ Démarrer une grossesse</button>
+        )}
+      </header>
 
-      <div style={{ marginTop: 20 }}>
-        <div style={{ fontSize: 18, fontFamily: 'Georgia, serif', fontWeight: 600, color: '#2a1810', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>🔐 {tr.consents}</div>
+      <main style={{ padding: '24px 32px', maxWidth: 1400, margin: '0 auto' }}>
+        <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid rgba(42,24,16,0.08)', marginBottom: 24 }}>
+          {[{ id: 'overview', label: "Vue d'ensemble" }, { id: 'cpn', label: `CPN actuelle (${consultations.length})` }, { id: 'history', label: `Historique (${pastPregnancies.length})` }].map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: '12px 18px', fontSize: 13, fontWeight: 600, color: tab === t.id ? '#C44536' : '#8B6F5C', borderBottom: tab === t.id ? '2px solid #C44536' : '2px solid transparent', marginBottom: -1, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>{t.label}</button>
+          ))}
+        </div>
 
-        {error && <div style={{ marginBottom: 12, padding: 10, background: '#FFE8E2', borderRadius: 10, fontSize: 11, color: '#8B2E26' }}>⚠️ {error}</div>}
+        {tab === 'overview' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+            <div style={cardStyle}>
+              <div style={sectionLabelStyle}>Informations</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 12 }}>
+                <InfoItem label="Téléphone" value={patient.phone}/>
+                <InfoItem label="Localisation" value={`${patient.city || '—'}, ${patient.region || '—'}`}/>
+                <InfoItem label="Langue" value={patient.preferred_language || 'fr'}/>
+              </div>
+            </div>
+            {currentPregnancy && (
+              <div style={{ background: 'linear-gradient(135deg, #2D5F5D 0%, #1F4341 100%)', borderRadius: 20, padding: 24, color: '#FAF6F0' }}>
+                <div style={{ fontSize: 11, color: 'rgba(244,228,193,0.7)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Grossesse en cours</div>
+                <div style={{ fontSize: 40, fontWeight: 600, fontFamily: 'Georgia, serif', marginTop: 8, lineHeight: 1 }}>Semaine {weeks}</div>
+                <div style={{ fontSize: 13, color: 'rgba(244,228,193,0.8)', marginTop: 4 }}>Terme : {new Date(currentPregnancy.expected_delivery_date).toLocaleDateString('fr-FR')}</div>
+                <div style={{ marginTop: 14, padding: 10, background: 'rgba(244,228,193,0.1)', borderRadius: 8, fontSize: 11 }}>
+                  Risque : <strong style={{ color: currentPregnancy.current_risk_level === 'eleve' || currentPregnancy.current_risk_level === 'tres_eleve' ? '#FFB6B6' : '#B6E5C7' }}>{currentPregnancy.current_risk_level || 'faible'}</strong>
+                </div>
+              </div>
+            )}
 
-        {pendingRequests.length > 0 && (
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8 }}>📨 {tr.pendingRequests} ({pendingRequests.length})</div>
-            {pendingRequests.map(req => (
-              <div key={req.id} style={{ background: 'linear-gradient(135deg, #FFF6E8 0%, #FFEAB8 100%)', border: '2px solid #D4A574', borderRadius: 14, padding: 14, marginBottom: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, #2D5F5D 0%, #1F4341 100%)', color: '#FAF6F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🩺</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#2a1810' }}>{req.requester?.first_name} {req.requester?.last_name}</div>
-                    <div style={{ fontSize: 11, color: '#5D4037', marginTop: 2 }}>{req.requester?.role === 'sage_femme' ? 'Sage-femme' : 'Médecin'}{req.requester?.structure?.name && ` · ${req.requester.structure.name}`}</div>
-                    {req.message && <div style={{ marginTop: 8, padding: 8, background: 'rgba(255,255,255,0.6)', borderRadius: 8, fontSize: 11, color: '#5D4037', lineHeight: 1.4, fontStyle: 'italic' }}>« {req.message} »</div>}
-                    <div style={{ fontSize: 10, color: '#8B6F5C', marginTop: 6 }}>{tr.requestedAt} {new Date(req.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</div>
+            {currentPregnancy && (
+              <div style={{ ...cardStyle, gridColumn: 'span 2' }}>
+                <div style={sectionLabelStyle}>Antécédents</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+                  {Object.entries({
+                    'HTA': currentPregnancy.has_hypertension,
+                    'Diabète': currentPregnancy.has_diabetes,
+                    'VIH': currentPregnancy.has_hiv,
+                    'Drépanocytose': currentPregnancy.has_sickle_cell,
+                    'Antécédent césarienne': currentPregnancy.has_previous_csection,
+                    'Antécédent HPP': currentPregnancy.has_previous_hemorrhage,
+                    'Pré-éclampsie': currentPregnancy.has_previous_preeclampsia,
+                  }).filter(([_, v]) => v).map(([k]) => (
+                    <div key={k} style={{ padding: '6px 12px', background: '#FFE8E2', color: '#8B2E26', borderRadius: 8, fontSize: 12, fontWeight: 600 }}>{k}</div>
+                  ))}
+                  {!Object.values({hta: currentPregnancy.has_hypertension, d: currentPregnancy.has_diabetes, v: currentPregnancy.has_hiv, s: currentPregnancy.has_sickle_cell, c: currentPregnancy.has_previous_csection, h: currentPregnancy.has_previous_hemorrhage, p: currentPregnancy.has_previous_preeclampsia}).some(v => v) && (
+                    <div style={{ padding: '6px 12px', background: '#DDEBE9', color: '#1F4341', borderRadius: 8, fontSize: 12, fontWeight: 600 }}>✓ Aucun antécédent particulier</div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab === 'cpn' && (
+          <div style={cardStyle}>
+            {consultations.length === 0 ? (
+              <div style={{ padding: 32, textAlign: 'center', color: '#8B6F5C' }}>Aucune CPN.</div>
+            ) : (
+              consultations.map(c => (
+                <div key={c.id} style={{ background: '#F5F1EB', borderRadius: 12, padding: 14, display: 'grid', gridTemplateColumns: '120px repeat(4, 1fr) 1fr', gap: 12, alignItems: 'center', marginBottom: 8 }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700 }}>{new Date(c.consultation_date).toLocaleDateString('fr-FR')}</div>
+                    <div style={{ fontSize: 10, color: '#8B6F5C' }}>S{c.gestational_age_weeks || '—'}</div>
                   </div>
+                  <div style={{ fontSize: 12 }}>Poids: <strong>{c.weight_kg || '—'}</strong></div>
+                  <div style={{ fontSize: 12 }}>TA: <strong>{c.blood_pressure_systolic && c.blood_pressure_diastolic ? `${c.blood_pressure_systolic}/${c.blood_pressure_diastolic}` : '—'}</strong></div>
+                  <div style={{ fontSize: 12 }}>HU: <strong>{c.uterine_height_cm || '—'}</strong></div>
+                  <div style={{ fontSize: 12 }}>BCF: <strong>{c.fetal_heart_rate || '—'}</strong></div>
+                  <div style={{ fontSize: 11, color: '#8B6F5C', textAlign: 'right' }}>par {c.performed_by_profile?.first_name || '—'}</div>
                 </div>
-                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                  <button onClick={() => refuseRequest(req)} disabled={actionLoading === req.id} style={{ flex: 1, padding: 10, background: '#FFFFFF', color: '#8B2E26', border: '2px solid #C44536', borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', opacity: actionLoading === req.id ? 0.5 : 1 }}>✕ {tr.refuse}</button>
-                  <button onClick={() => acceptRequest(req)} disabled={actionLoading === req.id} style={{ flex: 2, padding: 10, background: 'linear-gradient(135deg, #2D5F5D 0%, #1F4341 100%)', color: '#FAF6F0', border: 'none', borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', opacity: actionLoading === req.id ? 0.5 : 1 }}>{actionLoading === req.id ? '...' : `✓ ${tr.accept}`}</button>
-                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {tab === 'history' && (
+          <div style={cardStyle}>
+            {pastPregnancies.length === 0 ? (
+              <div style={{ padding: 32, textAlign: 'center', color: '#8B6F5C' }}>Aucune grossesse antérieure.</div>
+            ) : pastPregnancies.map(p => (
+              <div key={p.id} style={{ background: '#F5F1EB', borderRadius: 12, padding: 16, marginBottom: 12 }}>
+                <div style={{ fontSize: 14, fontWeight: 700 }}>Grossesse de {new Date(p.last_period_date).getFullYear()}</div>
+                <div style={{ fontSize: 11, color: '#8B6F5C', marginTop: 2 }}>DDR : {new Date(p.last_period_date).toLocaleDateString('fr-FR')} · {p.status}</div>
               </div>
             ))}
           </div>
         )}
-
-        <div>
-          <div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8 }}>✓ {tr.acceptedConsents} ({midwives.length})</div>
-          {midwives.length === 0 ? (
-            <div style={{ padding: 14, background: '#F5F1EB', borderRadius: 12, fontSize: 12, color: '#8B6F5C', textAlign: 'center', fontStyle: 'italic' }}>{tr.noAccessGranted}</div>
-          ) : midwives.map((m, i) => (
-            <div key={i} style={{ background: '#FFFFFF', border: '1px solid rgba(42,24,16,0.06)', borderRadius: 12, padding: 12, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #2D5F5D 0%, #1F4341 100%)', color: '#FAF6F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>🩺</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>{m.first_name} {m.last_name}</div>
-                <div style={{ fontSize: 10, color: '#8B6F5C' }}>{m.phone || '—'}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <button onClick={handleLogout} style={{ marginTop: 24, width: '100%', padding: 14, background: '#F5F1EB', color: '#8B2E26', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>{tr.logout}</button>
+      </main>
     </div>
   )
 }
 
 // =====================================================
-// BOTTOM NAVIGATION (5 onglets désormais)
+// NEW PREGNANCY VIEW
 // =====================================================
-function BottomNav({ tab, setTab, tr, hasAlert, pendingCount }) {
-  const items = [
-    { id: 'home', icon: '🏠', label: tr.home },
-    { id: 'carnet', icon: '📋', label: tr.carnet },
-    { id: 'sos', icon: '⚠️', label: tr.sos, primary: true },
-    { id: 'advice', icon: '🌿', label: tr.advice },
-    { id: 'more', icon: '☰', label: tr.more, badge: pendingCount > 0 ? pendingCount : null },
-  ]
+function NewPregnancyView({ profile, patientId, setView }) {
+  const [patient, setPatient] = useState(null)
+  const [lastPeriod, setLastPeriod] = useState('')
+  const [gravidity, setGravidity] = useState('1')
+  const [parity, setParity] = useState('0')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    supabase.from('profiles').select('*').eq('id', patientId).single().then(({ data }) => setPatient(data))
+  }, [patientId])
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    const ddr = new Date(lastPeriod)
+    const term = new Date(ddr)
+    term.setDate(term.getDate() + 280)
+    try {
+      const { error } = await supabase.from('pregnancies').insert({
+        woman_id: patientId, status: 'en_cours',
+        last_period_date: lastPeriod, expected_delivery_date: term.toISOString().split('T')[0],
+        gravidity: parseInt(gravidity), parity: parseInt(parity),
+        current_risk_level: 'faible', created_by: profile.id
+      })
+      if (error) throw error
+      setView({ name: 'patient', data: patientId })
+    } catch (err) { setError(err.message); setLoading(false) }
+  }
+
+  if (!patient) return <LoadingScreen/>
+
   return (
-    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(250,246,240,0.95)', borderTop: '1px solid rgba(42,24,16,0.08)', padding: '10px 12px 20px', display: 'flex', justifyContent: 'space-around', alignItems: 'center', zIndex: 10 }}>
-      {items.map(item => {
-        const active = tab === item.id
-        if (item.primary) {
-          return (
-            <button key={item.id} onClick={() => setTab(item.id)} style={{
-              width: 54, height: 54, borderRadius: '50%',
-              background: hasAlert ? 'linear-gradient(135deg, #FF6B6B 0%, #C44536 100%)' :
-                          active ? 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)' :
-                          'linear-gradient(135deg, #E85D4D 0%, #C44536 100%)',
-              color: '#FAF6F0', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 22, marginTop: -20, border: '4px solid #FAF6F0', cursor: 'pointer',
-              animation: hasAlert ? 'pulse 1.2s infinite' : 'none'
-            }}>{item.icon}</button>
-          )
-        }
-        return (
-          <button key={item.id} onClick={() => setTab(item.id)} style={{
-            flex: 1, padding: '6px 4px', display: 'flex', flexDirection: 'column',
-            alignItems: 'center', gap: 3, color: active ? '#C44536' : '#8B6F5C',
-            background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', position: 'relative'
-          }}>
-            <div style={{ position: 'relative' }}>
-              <span style={{ fontSize: 18 }}>{item.icon}</span>
-              {item.badge && (
-                <div style={{ position: 'absolute', top: -4, right: -8, minWidth: 16, height: 16, padding: '0 4px', background: '#C44536', color: '#FAF6F0', borderRadius: 8, fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #FAF6F0', boxSizing: 'content-box' }}>{item.badge}</div>
-              )}
+    <div style={pageStyle}>
+      <header style={headerStyle}>
+        <button onClick={() => setView({ name: 'patient', data: patientId })} style={backButtonStyle}>← Retour</button>
+        <div style={{ flex: 1, marginLeft: 16 }}>
+          <div style={{ fontSize: 20, fontWeight: 700, fontFamily: 'Georgia, serif' }}>Démarrer une grossesse · {patient.first_name} {patient.last_name}</div>
+        </div>
+      </header>
+      <main style={{ padding: '24px 32px', maxWidth: 800, margin: '0 auto' }}>
+        <form onSubmit={handleSubmit}>
+          <div style={cardStyle}>
+            <label style={labelStyle}>DDR *</label>
+            <input type="date" value={lastPeriod} onChange={(e) => setLastPeriod(e.target.value)} required style={inputStyle}/>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 14 }}>
+              <div><label style={labelStyle}>Gestité</label><input type="number" min="1" value={gravidity} onChange={(e) => setGravidity(e.target.value)} style={inputStyle}/></div>
+              <div><label style={labelStyle}>Parité</label><input type="number" min="0" value={parity} onChange={(e) => setParity(e.target.value)} style={inputStyle}/></div>
             </div>
-            <span style={{ fontSize: 9, fontWeight: active ? 700 : 500 }}>{item.label}</span>
+          </div>
+          {error && <div style={{ marginTop: 16, padding: 14, background: '#FFE8E2', borderRadius: 12, color: '#8B2E26' }}>⚠️ {error}</div>}
+          <button type="submit" disabled={loading} style={{ ...primaryButtonStyle, marginTop: 20, opacity: loading ? 0.6 : 1 }}>
+            {loading ? '...' : '✓ Démarrer la grossesse'}
           </button>
-        )
-      })}
+        </form>
+      </main>
     </div>
+  )
+}
+
+// =====================================================
+// NEW CPN VIEW - Formulaire complet avec alertes
+// =====================================================
+function NewCPNView({ profile, pregnancyId, patientId, setView }) {
+  const [pregnancy, setPregnancy] = useState(null)
+  const [patient, setPatient] = useState(null)
+  const [lastCPN, setLastCPN] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+
+  const [weight, setWeight] = useState('')
+  const [bpSys, setBpSys] = useState('')
+  const [bpDia, setBpDia] = useState('')
+  const [uh, setUh] = useState('')
+  const [bcf, setBcf] = useState('')
+  const [temperature, setTemperature] = useState('')
+
+  const [examsRealized, setExamsRealized] = useState({ groupage: false, vih: false, syphilis: false, hepatiteB: false, glycemie: false, nfs: false, ecbu: false, albumineSucre: false, toxoplasmose: false })
+  const [medications, setMedications] = useState({ ferFolate: false, sp: false, calcium: false, vat: false })
+  const [symptoms, setSymptoms] = useState({ saignements: false, cephalees: false, troublesVisuels: false, oedemes: false, fievre: false, diminutionMaf: false })
+
+  const [observations, setObservations] = useState('')
+  const [nextDate, setNextDate] = useState('')
+
+  useEffect(() => { loadData() }, [pregnancyId])
+
+  async function loadData() {
+    const { data: p } = await supabase.from('profiles').select('*').eq('id', patientId).single()
+    setPatient(p)
+    const { data: preg } = await supabase.from('pregnancies').select('*').eq('id', pregnancyId).single()
+    setPregnancy(preg)
+
+    const { data: cpns } = await supabase.from('consultations').select('*').eq('pregnancy_id', pregnancyId).order('consultation_date', { ascending: false }).limit(1)
+    if (cpns && cpns.length > 0) setLastCPN(cpns[0])
+
+    const next = new Date()
+    next.setDate(next.getDate() + 28)
+    setNextDate(next.toISOString().split('T')[0])
+    setLoading(false)
+  }
+
+  const tensionAlert = (parseInt(bpSys) >= 14 || parseInt(bpDia) >= 9) && bpSys && bpDia
+  const tensionAlertSevere = (parseInt(bpSys) >= 16 || parseInt(bpDia) >= 11) && bpSys && bpDia
+  const fevreAlert = parseFloat(temperature) >= 38 && temperature
+  const weightDelta = lastCPN?.weight_kg && weight ? (parseFloat(weight) - lastCPN.weight_kg).toFixed(1) : null
+  const preeclampsiaSigns = tensionAlert && (symptoms.cephalees || symptoms.troublesVisuels || symptoms.oedemes)
+  const dangerSigns = Object.values(symptoms).some(v => v)
+
+  async function handleSave() {
+    setSaving(true)
+    setError(null)
+    const weeks = pregnancy ? Math.floor((new Date() - new Date(pregnancy.last_period_date)) / (1000 * 60 * 60 * 24 * 7)) : null
+
+    try {
+      let fullObservations = observations || ''
+      const examsList = Object.entries(examsRealized).filter(([_, v]) => v).map(([k]) => k)
+      if (examsList.length > 0) fullObservations += `\n\nExamens : ${examsList.join(', ')}`
+      const medsList = Object.entries(medications).filter(([_, v]) => v).map(([k]) => k)
+      if (medsList.length > 0) fullObservations += `\n\nMédicaments : ${medsList.join(', ')}`
+      const symptomsList = Object.entries(symptoms).filter(([_, v]) => v).map(([k]) => k)
+      if (symptomsList.length > 0) fullObservations += `\n\n⚠️ Symptômes : ${symptomsList.join(', ')}`
+
+      const { error: insertError } = await supabase.from('consultations').insert({
+        pregnancy_id: pregnancyId, performed_by: profile.id, structure_id: profile.structure_id,
+        consultation_date: new Date().toISOString(), gestational_age_weeks: weeks,
+        weight_kg: weight ? parseFloat(weight) : null,
+        blood_pressure_systolic: bpSys ? parseInt(bpSys) : null,
+        blood_pressure_diastolic: bpDia ? parseInt(bpDia) : null,
+        uterine_height_cm: uh ? parseFloat(uh) : null,
+        fetal_heart_rate: bcf ? parseInt(bcf) : null,
+        temperature_celsius: temperature ? parseFloat(temperature) : null,
+        observations: fullObservations.trim() || null,
+        next_appointment_date: nextDate || null,
+        validated: true, validated_at: new Date().toISOString()
+      })
+      if (insertError) throw insertError
+
+      let newRiskLevel = pregnancy?.current_risk_level || 'faible'
+      if (tensionAlertSevere || preeclampsiaSigns) newRiskLevel = 'tres_eleve'
+      else if (tensionAlert || dangerSigns) newRiskLevel = 'eleve'
+      else if (fevreAlert) newRiskLevel = 'modere'
+
+      if (newRiskLevel !== pregnancy?.current_risk_level) {
+        await supabase.from('pregnancies').update({ current_risk_level: newRiskLevel }).eq('id', pregnancyId)
+      }
+
+      if (nextDate) {
+        await supabase.from('appointments').insert({
+          pregnancy_id: pregnancyId, structure_id: profile.structure_id,
+          appointment_date: new Date(nextDate).toISOString(), type: 'cpn', status: 'planifie'
+        })
+      }
+
+      setView({ name: 'patient', data: patientId })
+    } catch (err) {
+      setError(err.message); setSaving(false)
+    }
+  }
+
+  if (loading) return <LoadingScreen/>
+
+  const weeks = pregnancy ? Math.floor((new Date() - new Date(pregnancy.last_period_date)) / (1000 * 60 * 60 * 24 * 7)) : null
+  const age = patient?.date_of_birth ? Math.floor((new Date() - new Date(patient.date_of_birth)) / (1000 * 60 * 60 * 24 * 365.25)) : null
+
+  const antecedents = []
+  if (pregnancy?.has_hypertension) antecedents.push({ label: 'HTA', severity: 'high' })
+  if (pregnancy?.has_diabetes) antecedents.push({ label: 'Diabète', severity: 'high' })
+  if (pregnancy?.has_hiv) antecedents.push({ label: 'VIH', severity: 'medium' })
+  if (pregnancy?.has_sickle_cell) antecedents.push({ label: 'Drépanocytose', severity: 'high' })
+  if (pregnancy?.has_previous_csection) antecedents.push({ label: 'Antécédent césarienne', severity: 'medium' })
+  if (pregnancy?.has_previous_hemorrhage) antecedents.push({ label: 'Antécédent HPP', severity: 'high' })
+  if (pregnancy?.has_previous_preeclampsia) antecedents.push({ label: 'Pré-éclampsie ant.', severity: 'high' })
+
+  return (
+    <div style={pageStyle}>
+      <header style={headerStyle}>
+        <button onClick={() => setView({ name: 'patient', data: patientId })} style={backButtonStyle}>✕ Annuler</button>
+        <div style={{ flex: 1, marginLeft: 16 }}>
+          <div style={{ fontSize: 20, fontWeight: 700, fontFamily: 'Georgia, serif' }}>Nouvelle CPN · {patient?.first_name} {patient?.last_name}</div>
+          <div style={{ fontSize: 11, color: '#8B6F5C', display: 'flex', gap: 10, marginTop: 2 }}>
+            <span style={{ fontFamily: 'monospace' }}>{patient?.ipu}</span>
+            {age && <span>· {age} ans</span>}
+            {pregnancy && <span>· G{pregnancy.gravidity}P{pregnancy.parity}</span>}
+            {weeks && <span>· S{weeks}</span>}
+          </div>
+        </div>
+        <button onClick={handleSave} disabled={saving} style={{ padding: '12px 20px', background: 'linear-gradient(135deg, #2D5F5D 0%, #1F4341 100%)', color: '#FAF6F0', borderRadius: 12, fontSize: 13, fontWeight: 700, border: 'none', cursor: saving ? 'wait' : 'pointer', fontFamily: 'inherit', opacity: saving ? 0.6 : 1 }}>{saving ? '...' : '💾 Valider la CPN'}</button>
+      </header>
+
+      <main style={{ padding: '24px 32px', maxWidth: 1100, margin: '0 auto' }}>
+        {error && <div style={{ padding: 14, background: '#FFE8E2', borderRadius: 12, color: '#8B2E26', marginBottom: 16 }}>⚠️ {error}</div>}
+
+        {antecedents.length > 0 && (
+          <div style={{ padding: 14, background: 'linear-gradient(135deg, #FFE8E2 0%, #F4E4C1 100%)', border: '1px solid rgba(196,69,54,0.3)', borderRadius: 14, marginBottom: 16 }}>
+            <div style={{ fontSize: 11, color: '#8B2E26', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8 }}>⚠️ Antécédents à surveiller</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {antecedents.map((a, i) => (
+                <div key={i} style={{ padding: '6px 12px', background: a.severity === 'high' ? '#C44536' : '#D4A574', color: '#FAF6F0', borderRadius: 8, fontSize: 12, fontWeight: 600 }}>{a.label}</div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {lastCPN && (
+          <div style={{ padding: 14, background: '#F5F1EB', borderRadius: 14, marginBottom: 16, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>📊 Dernière CPN ({new Date(lastCPN.consultation_date).toLocaleDateString('fr-FR')})</div>
+            {lastCPN.weight_kg && <div style={{ fontSize: 12 }}>Poids: <strong>{lastCPN.weight_kg} kg</strong></div>}
+            {lastCPN.blood_pressure_systolic && <div style={{ fontSize: 12 }}>TA: <strong>{lastCPN.blood_pressure_systolic}/{lastCPN.blood_pressure_diastolic}</strong></div>}
+            {lastCPN.uterine_height_cm && <div style={{ fontSize: 12 }}>HU: <strong>{lastCPN.uterine_height_cm} cm</strong></div>}
+            {lastCPN.fetal_heart_rate && <div style={{ fontSize: 12 }}>BCF: <strong>{lastCPN.fetal_heart_rate}</strong></div>}
+          </div>
+        )}
+
+        <div style={cardStyle}>
+          <div style={{ fontSize: 18, fontWeight: 600, fontFamily: 'Georgia, serif', marginBottom: 4 }}>1. Constantes</div>
+          <div style={{ fontSize: 12, color: '#8B6F5C', marginBottom: 16 }}>Mesures cliniques du jour</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+            <div>
+              <label style={labelStyle}>Poids (kg)</label>
+              <input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="65.5" style={inputStyle}/>
+              {weightDelta !== null && <div style={{ fontSize: 10, color: parseFloat(weightDelta) > 2 ? '#C44536' : '#5D4037', marginTop: 4, fontWeight: 600 }}>{parseFloat(weightDelta) > 0 ? '+' : ''}{weightDelta} kg vs dernière CPN</div>}
+            </div>
+            <div>
+              <label style={labelStyle}>Tension</label>
+              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                <input type="number" value={bpSys} onChange={(e) => setBpSys(e.target.value)} placeholder="11" style={{...inputStyle, textAlign: 'center', borderColor: tensionAlertSevere ? '#C44536' : tensionAlert ? '#D4A574' : 'rgba(42,24,16,0.08)'}}/>
+                <span style={{padding: 12, fontSize: 17, fontWeight: 700}}>/</span>
+                <input type="number" value={bpDia} onChange={(e) => setBpDia(e.target.value)} placeholder="7" style={{...inputStyle, textAlign: 'center', borderColor: tensionAlertSevere ? '#C44536' : tensionAlert ? '#D4A574' : 'rgba(42,24,16,0.08)'}}/>
+              </div>
+              {tensionAlertSevere ? <div style={{fontSize: 10, color: '#C44536', marginTop: 4, fontWeight: 700}}>🚨 HTA SÉVÈRE</div> : tensionAlert ? <div style={{fontSize: 10, color: '#8B2E26', marginTop: 4, fontWeight: 600}}>⚠ HTA gravidique</div> : null}
+            </div>
+            <div>
+              <label style={labelStyle}>Température (°C)</label>
+              <input type="number" step="0.1" value={temperature} onChange={(e) => setTemperature(e.target.value)} placeholder="36.8" style={{...inputStyle, borderColor: fevreAlert ? '#C44536' : 'rgba(42,24,16,0.08)'}}/>
+              {fevreAlert && <div style={{fontSize: 10, color: '#C44536', marginTop: 4, fontWeight: 600}}>⚠ Fièvre</div>}
+            </div>
+            <div>
+              <label style={labelStyle}>Hauteur utérine (cm)</label>
+              <input type="number" step="0.5" value={uh} onChange={(e) => setUh(e.target.value)} placeholder="28" style={inputStyle}/>
+              {weeks && uh && Math.abs(parseFloat(uh) - weeks) > 4 && <div style={{fontSize: 10, color: '#8B2E26', marginTop: 4, fontWeight: 600}}>⚠ HU/SA discordant</div>}
+            </div>
+            <div>
+              <label style={labelStyle}>BCF (bpm)</label>
+              <input type="number" value={bcf} onChange={(e) => setBcf(e.target.value)} placeholder="140" style={{...inputStyle, borderColor: bcf && (parseInt(bcf) < 110 || parseInt(bcf) > 160) ? '#C44536' : 'rgba(42,24,16,0.08)'}}/>
+              {bcf && (parseInt(bcf) < 110 || parseInt(bcf) > 160) && <div style={{fontSize: 10, color: '#C44536', marginTop: 4, fontWeight: 600}}>🚨 BCF anormal</div>}
+            </div>
+          </div>
+        </div>
+
+        <div style={{...cardStyle, marginTop: 16}}>
+          <div style={{ fontSize: 18, fontWeight: 600, fontFamily: 'Georgia, serif', marginBottom: 4 }}>2. Signes & symptômes</div>
+          <div style={{ fontSize: 12, color: '#8B6F5C', marginBottom: 16 }}>Cocher si la patiente présente ces signes</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <CheckboxField label="Saignements" checked={symptoms.saignements} onChange={(v) => setSymptoms({...symptoms, saignements: v})}/>
+            <CheckboxField label="Céphalées sévères" checked={symptoms.cephalees} onChange={(v) => setSymptoms({...symptoms, cephalees: v})}/>
+            <CheckboxField label="Troubles visuels" checked={symptoms.troublesVisuels} onChange={(v) => setSymptoms({...symptoms, troublesVisuels: v})}/>
+            <CheckboxField label="Œdèmes" checked={symptoms.oedemes} onChange={(v) => setSymptoms({...symptoms, oedemes: v})}/>
+            <CheckboxField label="Fièvre" checked={symptoms.fievre} onChange={(v) => setSymptoms({...symptoms, fievre: v})}/>
+            <CheckboxField label="Diminution MAF" checked={symptoms.diminutionMaf} onChange={(v) => setSymptoms({...symptoms, diminutionMaf: v})}/>
+          </div>
+          {preeclampsiaSigns && <div style={{ marginTop: 14, padding: 12, background: '#C44536', color: '#FAF6F0', borderRadius: 10, fontSize: 13, fontWeight: 700 }}>🚨 SUSPICION PRÉ-ÉCLAMPSIE — Référer en urgence</div>}
+        </div>
+
+        <div style={{...cardStyle, marginTop: 16}}>
+          <div style={{ fontSize: 18, fontWeight: 600, fontFamily: 'Georgia, serif', marginBottom: 4 }}>3. Examens biologiques</div>
+          <div style={{ fontSize: 12, color: '#8B6F5C', marginBottom: 16 }}>Examens réalisés ou prescrits</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+            <CheckboxField label="Groupage Rhésus" checked={examsRealized.groupage} onChange={(v) => setExamsRealized({...examsRealized, groupage: v})}/>
+            <CheckboxField label="Sérologie VIH" checked={examsRealized.vih} onChange={(v) => setExamsRealized({...examsRealized, vih: v})}/>
+            <CheckboxField label="Syphilis (TPHA)" checked={examsRealized.syphilis} onChange={(v) => setExamsRealized({...examsRealized, syphilis: v})}/>
+            <CheckboxField label="Hépatite B" checked={examsRealized.hepatiteB} onChange={(v) => setExamsRealized({...examsRealized, hepatiteB: v})}/>
+            <CheckboxField label="Toxoplasmose" checked={examsRealized.toxoplasmose} onChange={(v) => setExamsRealized({...examsRealized, toxoplasmose: v})}/>
+            <CheckboxField label="Glycémie" checked={examsRealized.glycemie} onChange={(v) => setExamsRealized({...examsRealized, glycemie: v})}/>
+            <CheckboxField label="NFS" checked={examsRealized.nfs} onChange={(v) => setExamsRealized({...examsRealized, nfs: v})}/>
+            <CheckboxField label="ECBU" checked={examsRealized.ecbu} onChange={(v) => setExamsRealized({...examsRealized, ecbu: v})}/>
+            <CheckboxField label="Albumine/Sucre" checked={examsRealized.albumineSucre} onChange={(v) => setExamsRealized({...examsRealized, albumineSucre: v})}/>
+          </div>
+        </div>
+
+        <div style={{...cardStyle, marginTop: 16}}>
+          <div style={{ fontSize: 18, fontWeight: 600, fontFamily: 'Georgia, serif', marginBottom: 16 }}>4. Médicaments</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <CheckboxField label="Fer + Acide folique" checked={medications.ferFolate} onChange={(v) => setMedications({...medications, ferFolate: v})}/>
+            <CheckboxField label="SP (paludisme)" checked={medications.sp} onChange={(v) => setMedications({...medications, sp: v})}/>
+            <CheckboxField label="Calcium" checked={medications.calcium} onChange={(v) => setMedications({...medications, calcium: v})}/>
+            <CheckboxField label="VAT" checked={medications.vat} onChange={(v) => setMedications({...medications, vat: v})}/>
+          </div>
+        </div>
+
+        <div style={{...cardStyle, marginTop: 16}}>
+          <div style={{ fontSize: 18, fontWeight: 600, fontFamily: 'Georgia, serif', marginBottom: 16 }}>5. Observations</div>
+          <textarea value={observations} onChange={(e) => setObservations(e.target.value)} rows={4} placeholder="Notes cliniques..." style={{...inputStyle, resize: 'vertical', fontFamily: 'inherit'}}/>
+        </div>
+
+        <div style={{...cardStyle, marginTop: 16}}>
+          <div style={{ fontSize: 18, fontWeight: 600, fontFamily: 'Georgia, serif', marginBottom: 16 }}>6. Prochain RDV</div>
+          <input type="date" value={nextDate} onChange={(e) => setNextDate(e.target.value)} style={inputStyle}/>
+        </div>
+
+        <div style={{ marginTop: 24, display: 'flex', gap: 10 }}>
+          <button onClick={() => setView({ name: 'patient', data: patientId })} style={{ flex: 1, padding: 14, background: '#F5F1EB', color: '#5D4037', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Annuler</button>
+          <button onClick={handleSave} disabled={saving} style={{ flex: 2, padding: 14, background: 'linear-gradient(135deg, #2D5F5D 0%, #1F4341 100%)', color: '#FAF6F0', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: saving ? 'wait' : 'pointer', boxShadow: '0 6px 16px rgba(45,95,93,0.3)', fontFamily: 'inherit', opacity: saving ? 0.6 : 1 }}>{saving ? 'Enregistrement...' : '💾 Valider la CPN'}</button>
+        </div>
+      </main>
+    </div>
+  )
+}
+
+// =====================================================
+// ALERT DETAIL VIEW
+// =====================================================
+function AlertDetailView({ profile, alertId, setView, openPatientDossier }) {
+  const [alert, setAlert] = useState(null)
+  const [woman, setWoman] = useState(null)
+  const [contacts, setContacts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [actionLoading, setActionLoading] = useState(false)
+
+  useEffect(() => { loadAlert() }, [alertId])
+
+  async function loadAlert() {
+    setLoading(true)
+    // Chargement en 2 temps - pas de jointure
+    const { data: a } = await supabase.from('alerts').select('*').eq('id', alertId).single()
+    setAlert(a)
+    if (a) {
+      const { data: w } = await supabase.from('profiles').select('id, first_name, last_name, ipu, phone, date_of_birth').eq('id', a.woman_id).single()
+      setWoman(w)
+      const { data: ec } = await supabase.from('emergency_contacts').select('*').eq('woman_id', a.woman_id)
+      setContacts(ec || [])
+    }
+    setLoading(false)
+  }
+
+  async function takeOver() {
+    setActionLoading(true)
+    await supabase.from('alerts').update({ status: 'prise_en_charge', taken_by: profile.id, taken_at: new Date().toISOString() }).eq('id', alertId)
+    loadAlert()
+    setActionLoading(false)
+  }
+
+  async function resolve() {
+    if (!confirm('Marquer résolue ?')) return
+    setActionLoading(true)
+    await supabase.from('alerts').update({ status: 'resolue', resolved_at: new Date().toISOString() }).eq('id', alertId)
+    setView({ name: 'home' })
+  }
+
+  if (loading) return <LoadingScreen/>
+  if (!alert) return <div>Alerte introuvable.</div>
+
+  const minutesAgo = Math.round((new Date() - new Date(alert.created_at)) / 60000)
+
+  return (
+    <div style={pageStyle}>
+      <header style={{ ...headerStyle, background: alert.status === 'active' ? '#C44536' : '#FFFFFF', color: alert.status === 'active' ? '#FAF6F0' : '#2a1810' }}>
+        <button onClick={() => setView({ name: 'home' })} style={{ ...backButtonStyle, background: alert.status === 'active' ? 'rgba(244,228,193,0.2)' : '#F5F1EB', color: alert.status === 'active' ? '#FAF6F0' : '#5D4037' }}>← Retour</button>
+        <div style={{ flex: 1, marginLeft: 16 }}>
+          <div style={{ fontSize: 20, fontWeight: 700, fontFamily: 'Georgia, serif' }}>🚨 Alerte SOS</div>
+          <div style={{ fontSize: 11, opacity: 0.85, marginTop: 2 }}>{alert.status === 'active' ? `Active depuis ${minutesAgo} min` : 'Résolue'}</div>
+        </div>
+      </header>
+      <main style={{ padding: '24px 32px', maxWidth: 1200, margin: '0 auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={cardStyle}>
+              <div style={sectionLabelStyle}>Patiente</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 12 }}>
+                <div style={{ width: 60, height: 60, borderRadius: 18, background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', color: '#FAF6F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 700 }}>{woman?.first_name?.[0]}{woman?.last_name?.[0]}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 22, fontWeight: 700, fontFamily: 'Georgia, serif' }}>{woman?.first_name} {woman?.last_name}</div>
+                  <div style={{ fontSize: 12, color: '#8B6F5C', marginTop: 4, fontFamily: 'monospace' }}>{woman?.ipu}</div>
+                </div>
+              </div>
+              <div style={{ marginTop: 16, display: 'flex', gap: 10 }}>
+                <a href={`tel:${woman?.phone}`} style={{ flex: 1, padding: 14, background: '#2D5F5D', color: '#FAF6F0', borderRadius: 12, fontSize: 14, fontWeight: 700, textDecoration: 'none', textAlign: 'center' }}>📞 Appeler</a>
+                <button onClick={() => woman && openPatientDossier(woman.id)} style={{ padding: '14px 18px', background: '#F5F1EB', color: '#5D4037', borderRadius: 12, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>📋 Dossier</button>
+              </div>
+            </div>
+            {alert.latitude && (
+              <div style={cardStyle}>
+                <div style={sectionLabelStyle}>📍 Position GPS</div>
+                <div style={{ marginTop: 12, fontSize: 13, fontFamily: 'monospace' }}>{alert.latitude.toFixed(6)}, {alert.longitude.toFixed(6)}</div>
+                <div style={{ marginTop: 12, display: 'flex', gap: 10 }}>
+                  <a href={`https://www.google.com/maps?q=${alert.latitude},${alert.longitude}`} target="_blank" rel="noopener noreferrer" style={{ flex: 1, padding: 12, background: '#2D5F5D', color: '#FAF6F0', borderRadius: 10, fontSize: 13, fontWeight: 600, textAlign: 'center', textDecoration: 'none' }}>🗺 Maps</a>
+                  <a href={`https://www.google.com/maps/dir/?api=1&destination=${alert.latitude},${alert.longitude}`} target="_blank" rel="noopener noreferrer" style={{ flex: 1, padding: 12, background: '#C44536', color: '#FAF6F0', borderRadius: 10, fontSize: 13, fontWeight: 600, textAlign: 'center', textDecoration: 'none' }}>🚗 Itinéraire</a>
+                </div>
+              </div>
+            )}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ background: alert.status === 'active' ? 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)' : 'linear-gradient(135deg, #2D5F5D 0%, #1F4341 100%)', color: '#FAF6F0', borderRadius: 20, padding: 20 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.8 }}>Statut</div>
+              <div style={{ fontSize: 22, fontFamily: 'Georgia, serif', fontWeight: 600, marginTop: 6 }}>{alert.status === 'active' ? 'Active' : alert.status === 'prise_en_charge' ? 'Prise en charge' : 'Résolue'}</div>
+            </div>
+            {alert.status === 'active' && <button onClick={takeOver} disabled={actionLoading} style={{ padding: 16, background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', color: '#FAF6F0', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>✓ Prendre en charge</button>}
+            {alert.status !== 'resolue' && <button onClick={resolve} disabled={actionLoading} style={{ padding: 14, background: '#2D5F5D', color: '#FAF6F0', borderRadius: 12, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Marquer résolue</button>}
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}
+
+// =====================================================
+// COMPOSANTS UTILITAIRES
+// =====================================================
+function StatCard({ icon, label, value, bg, highlight }) {
+  return (
+    <div style={{ background: highlight ? 'linear-gradient(135deg, #FFE8E2 0%, #FFFFFF 100%)' : '#FFFFFF', borderRadius: 18, padding: 18, border: highlight ? '2px solid #C44536' : '1px solid rgba(42,24,16,0.04)', animation: highlight && value > 0 ? 'pulse-alert 2s infinite' : 'none' }}>
+      <div style={{ width: 36, height: 36, borderRadius: 10, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, marginBottom: 10 }}>{icon}</div>
+      <div style={{ fontSize: 32, fontWeight: 700, fontFamily: 'Georgia, serif', color: highlight && value > 0 ? '#C44536' : '#2a1810', lineHeight: 1 }}>{value}</div>
+      <div style={{ fontSize: 12, color: '#8B6F5C', marginTop: 4, fontWeight: 500 }}>{label}</div>
+    </div>
+  )
+}
+
+function InfoItem({ label, value }) {
+  return (
+    <div>
+      <div style={{ fontSize: 10, color: '#8B6F5C', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{label}</div>
+      <div style={{ fontSize: 13, color: '#2a1810', fontWeight: 600, marginTop: 4 }}>{value}</div>
+    </div>
+  )
+}
+
+function CheckboxField({ label, checked, onChange }) {
+  return (
+    <button type="button" onClick={() => onChange(!checked)} style={{
+      padding: '10px 12px', background: checked ? '#FFE8E2' : '#F5F1EB',
+      border: checked ? '2px solid #C44536' : '2px solid transparent',
+      borderRadius: 10, fontSize: 12, fontWeight: 600,
+      color: checked ? '#8B2E26' : '#5D4037', cursor: 'pointer',
+      fontFamily: 'inherit', textAlign: 'left',
+      display: 'flex', alignItems: 'center', gap: 8
+    }}>
+      <span style={{ width: 18, height: 18, borderRadius: 4, background: checked ? '#C44536' : '#FFFFFF', border: checked ? 'none' : '1px solid rgba(42,24,16,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FAF6F0', fontSize: 11 }}>{checked && '✓'}</span>
+      {label}
+    </button>
   )
 }
 
 // =====================================================
 // STYLES
 // =====================================================
-const appBgStyle = { minHeight: '100vh', background: 'radial-gradient(ellipse at top, #2a1810 0%, #1a0e08 60%, #0f0805 100%)', fontFamily: 'system-ui, -apple-system, sans-serif', padding: '24px 16px', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }
-const mLabelStyle = { fontSize: 11, color: '#8B6F5C', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', display: 'block', marginBottom: 6 }
-const mInputStyle = { width: '100%', padding: '11px 14px', fontSize: 14, fontWeight: 500, color: '#2a1810', background: '#FFFFFF', border: '2px solid rgba(42,24,16,0.08)', borderRadius: 12, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }
-const mPrimaryButtonStyle = { width: '100%', padding: 13, background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', color: '#FAF6F0', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: '0 6px 16px rgba(196,69,54,0.3)', fontFamily: 'inherit' }
-const mLinkStyle = { color: '#C44536', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 12, fontFamily: 'inherit' }
-const mErrorStyle = { marginTop: 12, padding: 10, background: '#FFE8E2', borderRadius: 10, fontSize: 11, color: '#8B2E26', fontWeight: 500 }
+const loadingStyle = { minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#F5F1EB', fontFamily: 'system-ui, sans-serif' }
+const authBgStyle = { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #2D5F5D 0%, #1F4341 50%, #0F2A28 100%)', padding: 20, fontFamily: 'system-ui, sans-serif' }
+const authCardStyle = { background: '#FAF6F0', borderRadius: 32, padding: '40px 36px', width: '100%', maxWidth: 440, boxShadow: '0 40px 80px -20px rgba(0,0,0,0.4)' }
+const logoSmallStyle = { width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FAF6F0', fontSize: 20 }
+const labelStyle = { fontSize: 11, color: '#8B6F5C', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', display: 'block', marginBottom: 8 }
+const inputStyle = { width: '100%', padding: '12px 14px', fontSize: 14, fontWeight: 500, color: '#2a1810', background: '#FFFFFF', border: '2px solid rgba(42,24,16,0.08)', borderRadius: 12, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }
+const primaryButtonStyle = { width: '100%', padding: 14, background: 'linear-gradient(135deg, #2D5F5D 0%, #1F4341 100%)', color: '#FAF6F0', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: '0 6px 16px rgba(45,95,93,0.3)', fontFamily: 'inherit' }
+const linkButtonStyle = { color: '#C44536', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 13, fontFamily: 'inherit' }
+const errorBoxStyle = { marginTop: 14, padding: 12, background: '#FFE8E2', borderRadius: 10, fontSize: 12, color: '#8B2E26', fontWeight: 500 }
+const pageStyle = { minHeight: '100vh', background: '#F5F1EB', fontFamily: 'system-ui, sans-serif' }
+const headerStyle = { background: '#FFFFFF', borderBottom: '1px solid rgba(42,24,16,0.06)', padding: '14px 32px', display: 'flex', alignItems: 'center', position: 'sticky', top: 0, zIndex: 50 }
+const avatarStyle = { width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #2D5F5D 0%, #1F4341 100%)', color: '#FAF6F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700 }
+const searchHeroStyle = { background: 'linear-gradient(135deg, #2D5F5D 0%, #1F4341 100%)', borderRadius: 24, padding: 28, position: 'relative', overflow: 'hidden', boxShadow: '0 20px 40px -15px rgba(45,95,93,0.4)' }
+const patientRowStyle = { background: '#F5F1EB', border: '1px solid rgba(42,24,16,0.04)', borderRadius: 14, padding: 14, display: 'flex', alignItems: 'center', gap: 14, width: '100%', cursor: 'pointer', fontFamily: 'inherit' }
+const cardStyle = { background: '#FFFFFF', borderRadius: 20, padding: 20, border: '1px solid rgba(42,24,16,0.04)' }
+const sectionLabelStyle = { fontSize: 11, color: '#8B6F5C', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }
+const backButtonStyle = { display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', background: '#F5F1EB', borderRadius: 10, fontSize: 13, fontWeight: 600, color: '#5D4037', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }
 
-if (typeof document !== 'undefined' && !document.getElementById('yaay-animations')) {
+if (typeof document !== 'undefined' && !document.getElementById('yaay-pro-anim')) {
   const style = document.createElement('style')
-  style.id = 'yaay-animations'
-  style.textContent = `@keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.95; } }`
+  style.id = 'yaay-pro-anim'
+  style.textContent = `@keyframes pulse-alert { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.02); opacity: 0.95; } }`
   document.head.appendChild(style)
 }
