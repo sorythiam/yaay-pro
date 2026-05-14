@@ -612,6 +612,16 @@ function PatientForm({ profile, setView, mode = 'create', existingPatient = null
         }
       }
 
+      // Notification à la patiente si modification
+      if (mode === 'edit') {
+        await sendNotification(patientId, 'pregnancy_updated',
+          '📝 Votre dossier a été mis à jour',
+          `${profile.first_name} ${profile.last_name} a modifié des informations dans votre dossier médical.`,
+          { updated_by: profile.id },
+          profile.id
+        )
+      }
+
       setSuccess({ ipu, patientId, mode })
       setLoading(false)
     } catch (err) { setError(err.message); setLoading(false) }
@@ -893,42 +903,25 @@ function SearchExistingPatientForm({ openPatientDossier }) {
 // =====================================================
 // STYLES PARTAGÉS
 // =====================================================
-const loadingStyle = { minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#FAF6F0', fontFamily: 'system-ui, -apple-system, sans-serif' }
-const pageStyle = { minHeight: '100vh', background: '#F5F1EB', fontFamily: 'system-ui, -apple-system, sans-serif' }
-const headerStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 32px', background: '#FFFFFF', borderBottom: '1px solid rgba(42,24,16,0.08)', position: 'sticky', top: 0, zIndex: 10 }
-const authBgStyle = { minHeight: '100vh', background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 50%, #2D5F5D 100%)', fontFamily: 'system-ui, -apple-system, sans-serif', padding: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }
-const authCardStyle = { background: '#FAF6F0', maxWidth: 440, width: '100%', padding: 40, borderRadius: 24, boxShadow: '0 30px 80px rgba(0,0,0,0.3)' }
-const logoSmallStyle = { width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FAF6F0', fontSize: 22 }
-const cardStyle = { background: '#FFFFFF', borderRadius: 18, padding: 20, border: '1px solid rgba(42,24,16,0.04)' }
-const labelStyle = { fontSize: 11, color: '#8B6F5C', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: 6, letterSpacing: '0.05em' }
-const inputStyle = { width: '100%', padding: '11px 14px', fontSize: 14, fontWeight: 500, color: '#2a1810', background: '#FFFFFF', border: '2px solid rgba(42,24,16,0.08)', borderRadius: 12, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }
-const primaryButtonStyle = { width: '100%', padding: 13, background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', color: '#FAF6F0', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: '0 6px 16px rgba(196,69,54,0.3)', fontFamily: 'inherit' }
-const linkButtonStyle = { color: '#C44536', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit' }
-const errorBoxStyle = { marginTop: 14, padding: 12, background: '#FFE8E2', borderRadius: 10, color: '#8B2E26', fontSize: 12, fontWeight: 500 }
-const backButtonStyle = { padding: 10, background: '#F5F1EB', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#5D4037' }
-const avatarStyle = { width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', color: '#FAF6F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13 }
-const sectionLabelStyle = { fontSize: 11, color: '#8B6F5C', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }
-const searchHeroStyle = { padding: 24, borderRadius: 20, background: 'linear-gradient(135deg, #2D5F5D 0%, #1F4341 100%)' }
-const patientRowStyle = { display: 'flex', alignItems: 'center', gap: 12, padding: 12, background: '#FAF6F0', borderRadius: 14, border: 'none', cursor: 'pointer', fontFamily: 'inherit', width: '100%' }
 
-if (typeof document !== 'undefined' && !document.getElementById('yaay-pro-animations')) {
-  const style = document.createElement('style')
-  style.id = 'yaay-pro-animations'
-  style.textContent = `@keyframes pulse-alert { 0%, 100% { opacity: 1; } 50% { opacity: 0.85; } }`
-  document.head.appendChild(style)
+// =====================================================
+// SYSTÈME DE NOTIFICATIONS
+// =====================================================
+async function sendNotification(womanId, type, title, message, metadata = {}, createdBy = null) {
+  try {
+    await supabase.from('notifications').insert({
+      woman_id: womanId,
+      type,
+      title,
+      message,
+      metadata,
+      created_by: createdBy
+    })
+  } catch (err) {
+    console.error('Notification error:', err)
+  }
 }
-// =====================================================
-// YAAY PRO - APP.JS PARTIE 2/2
-// PatientFileView + Examens + NewCPN + NewPregnancy + Alert
-// À CONCATÉNER avec yaay_pro_part1.jsx
-//
-// IMPORTANT : Coller cette partie À LA SUITE du contenu
-// de yaay_pro_part1.jsx dans App.js (avant la dernière ligne avec styles)
-// =====================================================
 
-// =====================================================
-// PATIENT FILE VIEW - avec onglet Examens + bouton Modifier
-// =====================================================
 function PatientFileView({ profile, patientId, setView }) {
   const [patient, setPatient] = useState(null)
   const [currentPregnancy, setCurrentPregnancy] = useState(null)
@@ -1181,7 +1174,7 @@ function PatientFileView({ profile, patientId, setView }) {
 
         {/* TAB EXAMENS */}
         {tab === 'exams' && (
-          <ExamsTab pregnancyId={currentPregnancy?.id} exams={exams} profile={profile} onChange={loadPatient}/>
+          <ExamsTab pregnancyId={currentPregnancy?.id} patientId={patientId} exams={exams} profile={profile} onChange={loadPatient}/>
         )}
 
         {/* TAB HISTORIQUE */}
@@ -1229,7 +1222,7 @@ function Badge({ text, color }) {
 // =====================================================
 // EXAMS TAB - Onglet examens du dossier patiente
 // =====================================================
-function ExamsTab({ pregnancyId, exams, profile, onChange }) {
+function ExamsTab({ pregnancyId, patientId, exams, profile, onChange }) {
   const [updatingExam, setUpdatingExam] = useState(null)
   const [showResultModal, setShowResultModal] = useState(null)
 
@@ -1242,6 +1235,12 @@ function ExamsTab({ pregnancyId, exams, profile, onChange }) {
         prescribed_by: profile.id
       }, { onConflict: 'pregnancy_id,exam_code' })
       if (error) throw error
+      await sendNotification(patientId, 'exam_prescribed',
+        '📋 Examen prescrit',
+        `${exam.exam_name_fr} vous a été prescrit par ${profile.first_name} ${profile.last_name}.`,
+        { exam_code: exam.exam_code },
+        profile.id
+      )
       onChange()
     } catch (err) { alert('Erreur: ' + err.message) } finally { setUpdatingExam(null) }
   }
@@ -1296,7 +1295,7 @@ function ExamsTab({ pregnancyId, exams, profile, onChange }) {
       )}
 
       {showResultModal && (
-        <ExamResultModal exam={showResultModal} pregnancyId={pregnancyId} profile={profile} onClose={() => setShowResultModal(null)} onSaved={() => { setShowResultModal(null); onChange() }}/>
+        <ExamResultModal exam={showResultModal} pregnancyId={pregnancyId} patientId={patientId} profile={profile} onClose={() => setShowResultModal(null)} onSaved={() => { setShowResultModal(null); onChange() }}/>
       )}
     </div>
   )
@@ -1330,7 +1329,7 @@ function ExamSection({ title, exams, color, onPrescribe, onSeeResult, updatingEx
   )
 }
 
-function ExamResultModal({ exam, pregnancyId, profile, onClose, onSaved }) {
+function ExamResultModal({ exam, pregnancyId, patientId, profile, onClose, onSaved }) {
   const [resultValue, setResultValue] = useState('')
   const [isAbnormal, setIsAbnormal] = useState(false)
   const [notes, setNotes] = useState('')
@@ -1347,6 +1346,12 @@ function ExamResultModal({ exam, pregnancyId, profile, onClose, onSaved }) {
         recorded_by: profile.id
       }, { onConflict: 'pregnancy_id,exam_code' })
       if (error) throw error
+      await sendNotification(patientId, 'exam_result',
+        isAbnormal ? '⚠️ Résultat d\'examen anormal' : '✅ Résultat d\'examen reçu',
+        `Résultat de "${exam.exam_name_fr}" enregistré par ${profile.first_name} ${profile.last_name}.${isAbnormal ? ' Résultat anormal — consultez votre sage-femme.' : ''}`,
+        { exam_code: exam.exam_code, is_abnormal: isAbnormal },
+        profile.id
+      )
       onSaved()
     } catch (err) { alert('Erreur: ' + err.message); setLoading(false) }
   }
@@ -1448,6 +1453,32 @@ function NewCPNView({ profile, pregnancyId, patientId, setView }) {
       }
       const newRisk = calculateRiskScore(newRiskData)
       await supabase.from('pregnancies').update({ current_risk_level: newRisk.level }).eq('id', pregnancyId)
+
+      // 4. Notifications à la patiente
+      await sendNotification(patientId, 'cpn_created',
+        '🩺 Nouvelle consultation enregistrée',
+        `Votre CPN de S${weeks} a été enregistrée par ${profile.first_name} ${profile.last_name}. Poids: ${weight || '—'}kg, TA: ${bpSys || '—'}/${bpDia || '—'}.`,
+        { pregnancy_id: pregnancyId, weeks },
+        profile.id
+      )
+
+      if (selectedExams.length > 0) {
+        await sendNotification(patientId, 'exam_prescribed',
+          '📋 Examens prescrits',
+          `${selectedExams.length} examen(s) vous ont été prescrits lors de votre CPN. Consultez l'onglet Examens.`,
+          { exams: selectedExams },
+          profile.id
+        )
+      }
+
+      if (newRisk.level !== pregnancy.current_risk_level) {
+        await sendNotification(patientId, 'risk_changed',
+          '⚠️ Niveau de risque mis à jour',
+          `Votre niveau de risque a été reclassé à "${newRisk.label}" suite à votre dernière consultation.`,
+          { old_level: pregnancy.current_risk_level, new_level: newRisk.level },
+          profile.id
+        )
+      }
 
       setView({ name: 'patient', data: patientId })
     } catch (err) { setError(err.message); setLoading(false) }
@@ -1627,4 +1658,28 @@ function AlertDetailView({ profile, alertId, setView, openPatientDossier }) {
       </main>
     </div>
   )
+}
+const loadingStyle = { minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#FAF6F0', fontFamily: 'system-ui, -apple-system, sans-serif' }
+const pageStyle = { minHeight: '100vh', background: '#F5F1EB', fontFamily: 'system-ui, -apple-system, sans-serif' }
+const headerStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 32px', background: '#FFFFFF', borderBottom: '1px solid rgba(42,24,16,0.08)', position: 'sticky', top: 0, zIndex: 10 }
+const authBgStyle = { minHeight: '100vh', background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 50%, #2D5F5D 100%)', fontFamily: 'system-ui, -apple-system, sans-serif', padding: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }
+const authCardStyle = { background: '#FAF6F0', maxWidth: 440, width: '100%', padding: 40, borderRadius: 24, boxShadow: '0 30px 80px rgba(0,0,0,0.3)' }
+const logoSmallStyle = { width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FAF6F0', fontSize: 22 }
+const cardStyle = { background: '#FFFFFF', borderRadius: 18, padding: 20, border: '1px solid rgba(42,24,16,0.04)' }
+const labelStyle = { fontSize: 11, color: '#8B6F5C', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: 6, letterSpacing: '0.05em' }
+const inputStyle = { width: '100%', padding: '11px 14px', fontSize: 14, fontWeight: 500, color: '#2a1810', background: '#FFFFFF', border: '2px solid rgba(42,24,16,0.08)', borderRadius: 12, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }
+const primaryButtonStyle = { width: '100%', padding: 13, background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', color: '#FAF6F0', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: '0 6px 16px rgba(196,69,54,0.3)', fontFamily: 'inherit' }
+const linkButtonStyle = { color: '#C44536', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit' }
+const errorBoxStyle = { marginTop: 14, padding: 12, background: '#FFE8E2', borderRadius: 10, color: '#8B2E26', fontSize: 12, fontWeight: 500 }
+const backButtonStyle = { padding: 10, background: '#F5F1EB', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#5D4037' }
+const avatarStyle = { width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', color: '#FAF6F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13 }
+const sectionLabelStyle = { fontSize: 11, color: '#8B6F5C', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }
+const searchHeroStyle = { padding: 24, borderRadius: 20, background: 'linear-gradient(135deg, #2D5F5D 0%, #1F4341 100%)' }
+const patientRowStyle = { display: 'flex', alignItems: 'center', gap: 12, padding: 12, background: '#FAF6F0', borderRadius: 14, border: 'none', cursor: 'pointer', fontFamily: 'inherit', width: '100%' }
+
+if (typeof document !== 'undefined' && !document.getElementById('yaay-pro-animations')) {
+  const style = document.createElement('style')
+  style.id = 'yaay-pro-animations'
+  style.textContent = `@keyframes pulse-alert { 0%, 100% { opacity: 1; } 50% { opacity: 0.85; } }`
+  document.head.appendChild(style)
 }
