@@ -7,7 +7,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { calculateRiskScore, getRiskRecommendation, extractRiskDataFromPregnancy } from './riskScore'
-
+import { ProMedicationsTab } from './MedicationsComponents'
 // =====================================================
 // MAIN APP
 // =====================================================
@@ -1003,6 +1003,7 @@ function PatientFileView({ profile, patientId, setView }) {
             { id: 'overview', label: '🏠 Vue d\'ensemble' },
             { id: 'cpn', label: `🩺 CPN (${consultations.length})` },
             { id: 'exams', label: `🧪 Examens${lateExams > 0 ? ` ⚠️${lateExams}` : ''}` },
+            { id: 'meds', label: '💊 Médicaments' },  
             { id: 'history', label: '📜 Historique' }
           ].map(t => (
             <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: '14px 18px', fontSize: 13, fontWeight: 600, color: tab === t.id ? '#C44536' : '#8B6F5C', borderBottom: tab === t.id ? '2px solid #C44536' : '2px solid transparent', marginBottom: -1, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>{t.label}</button>
@@ -1176,7 +1177,9 @@ function PatientFileView({ profile, patientId, setView }) {
         {tab === 'exams' && (
           <ExamsTab pregnancyId={currentPregnancy?.id} patientId={patientId} exams={exams} profile={profile} onChange={loadPatient}/>
         )}
-
+        {tab === 'meds' && (
+          <ProMedicationsTab patientId={patientId} pregnancyId={currentPregnancy?.id} profile={profile} onChange={loadPatient}/>
+        )}
         {/* TAB HISTORIQUE */}
         {tab === 'history' && (
           <div>
