@@ -257,7 +257,7 @@ function DashboardHome({ profile, setView, openPatientDossier }) {
     setMyPatients(patientsWithPregs)
     const pregCount = (pregnancies || []).filter(p => p.status === 'en_cours').length
     const highRiskCount = (pregnancies || []).filter(p => p.status === 'en_cours' && ['eleve', 'tres_eleve'].includes(p.current_risk_level)).length
-    const { data: alerts } = await supabase.from('alerts').select('id, woman_id, type, status, created_at, latitude, longitude').in('woman_id', uniqueIds).eq('status', 'active').eq('type', 'sos').order('created_at', { ascending: false })
+    const { data: alerts } = await supabase.from('alerts').select('id, woman_id, type, status, created_at, latitude, longitude, triage_level, triage_score, triage_symptom_labels').in('woman_id', uniqueIds).eq('status', 'active').eq('type', 'sos').order('created_at', { ascending: false })
     const alertsWithNames = (alerts || []).map(a => ({ ...a, woman: patientsWithPregs.find(p => p.id === a.woman_id) }))
     setActiveAlerts(alertsWithNames)
     setStats({ patients: uniqueIds.length, pregnancies: pregCount, alerts: alertsWithNames.length, highRisk: highRiskCount })
@@ -312,7 +312,14 @@ function DashboardHome({ profile, setView, openPatientDossier }) {
             <div style={{ fontSize: 28 }}>🚨</div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 16, fontWeight: 700 }}>{activeAlerts.length} alerte{activeAlerts.length > 1 ? 's' : ''} SOS</div>
-              <div style={{ fontSize: 12, opacity: 0.9 }}>{activeAlerts.map(a => `${a.woman?.first_name} ${a.woman?.last_name}`).join(', ')}</div>
+              <div style={{ fontSize: 12, opacity: 0.9 }}>
+                {activeAlerts.map(a => {
+                  const name = `${a.woman?.first_name || ''} ${a.woman?.last_name || ''}`
+                  const level = a.triage_level === 'critical' ? ' 🔴' : a.triage_level === 'urgent' ? ' 🟠' : ''
+                  const symptoms = a.triage_symptom_labels ? ` (${a.triage_symptom_labels.slice(0, 2).join(', ')})` : ''
+                  return name + level + symptoms
+                }).join(' · ')}
+              </div>
             </div>
             <button onClick={() => setView({ name: 'alert', data: activeAlerts[0].id })} style={{ padding: '10px 20px', background: '#FAF6F0', color: '#8B2E26', borderRadius: 10, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>VOIR →</button>
           </div>
@@ -1621,6 +1628,7 @@ function NewPregnancyView({ profile, patientId, setView }) {
 function AlertDetailView({ profile, alertId, setView, openPatientDossier }) {
   const [alert, setAlert] = useState(null)
   const [woman, setWoman] = useState(null)
+  const [pregnancy, setPregnancy] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -1630,41 +1638,109 @@ function AlertDetailView({ profile, alertId, setView, openPatientDossier }) {
       if (a?.woman_id) {
         const { data: w } = await supabase.from('profiles').select('*').eq('id', a.woman_id).single()
         setWoman(w)
+        const { data: p } = await supabase.from('pregnancies').select('*').eq('woman_id', a.woman_id).eq('status', 'en_cours').maybeSingle()
+        setPregnancy(p)
       }
       setLoading(false)
     }
     load()
   }, [alertId])
 
+  async function takeCharge() {
+    await supabase.from('alerts').update({ status: 'prise_en_charge', taken_by: profile.id, taken_at: new Date().toISOString() }).eq('id', alertId)
+    setAlert(prev => ({ ...prev, status: 'prise_en_charge', taken_by: profile.id }))
+  }
+
   async function resolveAlert() {
-    if (!confirm('Résoudre cette alerte ?')) return
-    await supabase.from('alerts').update({ status: 'resolue', resolved_at: new Date().toISOString(), resolved_by: profile.id }).eq('id', alertId)
+    const notes = prompt('Notes de résolution (optionnel) :')
+    await supabase.from('alerts').update({ status: 'resolue', resolved_at: new Date().toISOString(), resolution_notes: notes || null }).eq('id', alertId)
     setView({ name: 'home' })
   }
 
   if (loading) return <LoadingScreen/>
   if (!alert) return <div>Alerte introuvable</div>
 
+  const triageLevels = {
+    critical: { label: '🚨 URGENCE VITALE', color: '#DC2626', bg: '#FEE2E2' },
+    urgent: { label: '🏥 URGENCE', color: '#EA580C', bg: '#FFF7ED' },
+    moderate: { label: '📞 MODÉRÉ', color: '#CA8A04', bg: '#FEFCE8' },
+    low: { label: '💚 CONSEIL', color: '#16A34A', bg: '#F0FDF4' }
+  }
+  const tl = alert.triage_level ? triageLevels[alert.triage_level] : null
+  const weeksPregnant = pregnancy?.last_period_date ? Math.floor((new Date() - new Date(pregnancy.last_period_date)) / (1000 * 60 * 60 * 24 * 7)) : null
+
   return (
     <div style={pageStyle}>
       <header style={headerStyle}>
         <button onClick={() => setView({ name: 'home' })} style={backButtonStyle}>← Retour</button>
         <div style={{ flex: 1, marginLeft: 16, fontSize: 20, fontWeight: 700, fontFamily: 'Georgia, serif', color: '#8B2E26' }}>🚨 Alerte SOS</div>
-        <button onClick={resolveAlert} style={{ padding: '10px 18px', background: '#2D5F5D', color: '#FAF6F0', borderRadius: 10, fontWeight: 700, border: 'none', cursor: 'pointer' }}>✓ Résoudre</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {alert.status === 'active' && <button onClick={takeCharge} style={{ padding: '10px 18px', background: '#EA580C', color: '#FAF6F0', borderRadius: 10, fontWeight: 700, border: 'none', cursor: 'pointer' }}>⚡ Prendre en charge</button>}
+          <button onClick={resolveAlert} style={{ padding: '10px 18px', background: '#2D5F5D', color: '#FAF6F0', borderRadius: 10, fontWeight: 700, border: 'none', cursor: 'pointer' }}>✓ Résoudre</button>
+        </div>
       </header>
       <main style={{ padding: '24px 32px', maxWidth: 900, margin: '0 auto' }}>
+        
+        {/* Triage banner */}
+        {tl && (
+          <div style={{ padding: '16px 20px', background: tl.bg, borderRadius: 18, border: `2px solid ${tl.color}30`, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ fontSize: 36 }}>{tl.label.split(' ')[0]}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: tl.color, letterSpacing: '0.02em' }}>{tl.label}</div>
+              <div style={{ fontSize: 12, color: '#5D4037', marginTop: 2 }}>Score: {alert.triage_score} · Depuis: {alert.triage_onset || '?'}</div>
+            </div>
+            {weeksPregnant && (
+              <div style={{ padding: '8px 14px', background: '#FFFFFF', borderRadius: 10, textAlign: 'center' }}>
+                <div style={{ fontSize: 18, fontWeight: 800, color: '#2a1810' }}>{weeksPregnant}</div>
+                <div style={{ fontSize: 9, color: '#8B6F5C', fontWeight: 700 }}>SA</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Patient card */}
         <div style={{ ...cardStyle, border: '2px solid #C44536', background: 'linear-gradient(135deg, #FFE8E2 0%, #FFFFFF 100%)' }}>
           <div style={{ fontSize: 11, color: '#8B2E26', fontWeight: 700, textTransform: 'uppercase' }}>Patiente en urgence</div>
           <div style={{ fontSize: 28, fontFamily: 'Georgia, serif', fontWeight: 700, marginTop: 6 }}>{woman?.first_name} {woman?.last_name}</div>
-          <div style={{ fontSize: 12, color: '#5D4037', fontFamily: 'monospace', marginTop: 4 }}>{woman?.ipu}</div>
-          <div style={{ marginTop: 16, padding: 14, background: '#FFFFFF', borderRadius: 12 }}>
-            <div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 700 }}>📍 LOCALISATION</div>
-            <div style={{ fontSize: 14, fontFamily: 'monospace', marginTop: 4, fontWeight: 600 }}>{alert.latitude?.toFixed(6)}, {alert.longitude?.toFixed(6)}</div>
-            <a href={`https://www.google.com/maps?q=${alert.latitude},${alert.longitude}`} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 10, padding: '10px 16px', background: '#2D5F5D', color: '#FAF6F0', borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>📍 Voir sur Maps</a>
+          <div style={{ display: 'flex', gap: 12, marginTop: 4, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 12, color: '#5D4037', fontFamily: 'monospace' }}>{woman?.ipu}</span>
+            {woman?.blood_type && <span style={{ fontSize: 11, padding: '2px 8px', background: '#DC262620', color: '#DC2626', borderRadius: 6, fontWeight: 700 }}>🩸 {woman.blood_type}</span>}
+            {woman?.phone && <span style={{ fontSize: 12, color: '#5D4037' }}>📱 {woman.phone}</span>}
           </div>
+
+          {/* Symptoms */}
+          {alert.triage_symptom_labels && alert.triage_symptom_labels.length > 0 && (
+            <div style={{ marginTop: 16, padding: 14, background: tl?.bg || '#FEE2E2', borderRadius: 12 }}>
+              <div style={{ fontSize: 11, color: tl?.color || '#8B2E26', fontWeight: 700, textTransform: 'uppercase', marginBottom: 8 }}>Symptômes déclarés</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {alert.triage_symptom_labels.map((s, i) => (
+                  <span key={i} style={{ fontSize: 12, padding: '5px 12px', background: '#FFFFFF', borderRadius: 8, fontWeight: 600, color: '#2a1810', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>{s}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* AI Summary for the midwife/doctor */}
+          {alert.triage_ai_summary && (
+            <div style={{ marginTop: 12, padding: 14, background: '#F0F9FF', borderRadius: 12, border: '1px solid #BAE6FD' }}>
+              <div style={{ fontSize: 11, color: '#0369A1', fontWeight: 700, textTransform: 'uppercase', marginBottom: 8 }}>🧠 Notes cliniques IA</div>
+              <pre style={{ fontSize: 12, color: '#2a1810', fontFamily: 'system-ui, sans-serif', whiteSpace: 'pre-wrap', lineHeight: 1.6, margin: 0 }}>{alert.triage_ai_summary}</pre>
+            </div>
+          )}
+
+          {/* Location */}
+          {alert.latitude && (
+            <div style={{ marginTop: 12, padding: 14, background: '#FFFFFF', borderRadius: 12 }}>
+              <div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 700 }}>📍 LOCALISATION</div>
+              <div style={{ fontSize: 14, fontFamily: 'monospace', marginTop: 4, fontWeight: 600 }}>{alert.latitude?.toFixed(6)}, {alert.longitude?.toFixed(6)}</div>
+              <a href={`https://www.google.com/maps?q=${alert.latitude},${alert.longitude}`} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 10, padding: '10px 16px', background: '#2D5F5D', color: '#FAF6F0', borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>📍 Ouvrir dans Maps</a>
+            </div>
+          )}
+
+          {/* Action buttons */}
           <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
             <button onClick={() => openPatientDossier(alert.woman_id)} style={{ flex: 1, padding: 12, background: '#C44536', color: '#FAF6F0', borderRadius: 10, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>📋 Voir le dossier</button>
-            {woman?.phone && <a href={`tel:${woman.phone}`} style={{ flex: 1, padding: 12, background: '#1F4341', color: '#FAF6F0', borderRadius: 10, fontWeight: 700, textAlign: 'center', textDecoration: 'none', fontFamily: 'inherit' }}>📞 Appeler</a>}
+            {woman?.phone && <a href={`tel:${woman.phone}`} style={{ flex: 1, padding: 12, background: '#1F4341', color: '#FAF6F0', borderRadius: 10, fontWeight: 700, textAlign: 'center', textDecoration: 'none', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📞 Appeler</a>}
           </div>
         </div>
       </main>
