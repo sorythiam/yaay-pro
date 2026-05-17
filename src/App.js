@@ -1704,7 +1704,7 @@ function AlertDetailView({ profile, alertId, setView, openPatientDossier }) {
           <div style={{ fontSize: 28, fontFamily: 'Georgia, serif', fontWeight: 700, marginTop: 6 }}>{woman?.first_name} {woman?.last_name}</div>
           <div style={{ display: 'flex', gap: 12, marginTop: 4, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 12, color: '#5D4037', fontFamily: 'monospace' }}>{woman?.ipu}</span>
-            {woman?.blood_type && <span style={{ fontSize: 11, padding: '2px 8px', background: '#DC262620', color: '#DC2626', borderRadius: 6, fontWeight: 700 }}>🩸 {woman.blood_type}</span>}
+            {pregnancy?.blood_type && <span style={{ fontSize: 11, padding: '2px 8px', background: '#DC262620', color: '#DC2626', borderRadius: 6, fontWeight: 700 }}>🩸 {pregnancy.blood_type}</span>}
             {woman?.phone && <span style={{ fontSize: 12, color: '#5D4037' }}>📱 {woman.phone}</span>}
           </div>
 
