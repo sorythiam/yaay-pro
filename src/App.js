@@ -1,9 +1,3 @@
-// =====================================================
-// YAAY PRO - APP.JS PARTIE 1/2
-// Auth + Dashboard + Création/Modification patiente
-// À CONCATÉNER avec yaay_pro_part2.jsx
-// =====================================================
-
 import React, { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { calculateRiskScore, getRiskRecommendation, extractRiskDataFromPregnancy } from './riskScore'
@@ -51,7 +45,6 @@ export default function App() {
   if (!session) return <AuthScreen />
   if (!profile) return <ProfileSetupScreen userId={session.user.id} email={session.user.email} onComplete={() => loadProfile(session.user.id)} />
 
-  // ⚠️ Les vues 'patient', 'newCPN', 'newPregnancy', 'alert' sont dans PARTIE 2
   switch (view.name) {
     case 'patient': return <PatientFileView profile={profile} patientId={view.data} setView={setView} />
     case 'editPatient': return <EditPatientView profile={profile} patientId={view.data} setView={setView} />
@@ -424,14 +417,10 @@ function EnrollPatientView({ profile, setView, openPatientDossier }) {
   )
 }
 
-// =====================================================
-// EDIT PATIENT - NOUVEAU - Modifier une patiente existante
-// =====================================================
 function EditPatientView({ profile, patientId, setView }) {
   const [loading, setLoading] = useState(true)
   const [patient, setPatient] = useState(null)
   const [pregnancy, setPregnancy] = useState(null)
-
   useEffect(() => {
     async function load() {
       const { data: p } = await supabase.from('profiles').select('*').eq('id', patientId).single()
@@ -440,10 +429,8 @@ function EditPatientView({ profile, patientId, setView }) {
     }
     load()
   }, [patientId])
-
   if (loading) return <LoadingScreen/>
   if (!patient) return <div>Patiente introuvable</div>
-
   return (
     <div style={pageStyle}>
       <header style={headerStyle}>
@@ -464,10 +451,9 @@ function EditPatientView({ profile, patientId, setView }) {
 }
 
 // =====================================================
-// PATIENT FORM - UNIFIÉ POUR CRÉATION ET MODIFICATION
+// PATIENT FORM - UNIFIÉ CRÉATION ET MODIFICATION
 // =====================================================
 function PatientForm({ profile, setView, mode = 'create', existingPatient = null, existingPregnancy = null }) {
-  // Identité
   const [firstName, setFirstName] = useState(existingPatient?.first_name || '')
   const [lastName, setLastName] = useState(existingPatient?.last_name || '')
   const [phone, setPhone] = useState(existingPatient?.phone?.replace('+221', '') || '')
@@ -475,24 +461,18 @@ function PatientForm({ profile, setView, mode = 'create', existingPatient = null
   const [city, setCity] = useState(existingPatient?.city || '')
   const [region, setRegion] = useState(existingPatient?.region || '')
   const [bloodType, setBloodType] = useState(existingPregnancy?.blood_type || '')
-
-  // Vie sociale
   const [maritalStatus, setMaritalStatus] = useState(existingPatient?.marital_status || '')
   const [numberOfMarriages, setNumberOfMarriages] = useState(String(existingPatient?.number_of_marriages || 0))
   const [occupation, setOccupation] = useState(existingPatient?.occupation || '')
   const [educationLevel, setEducationLevel] = useState(existingPatient?.education_level || '')
   const [hasCmu, setHasCmu] = useState(existingPatient?.has_cmu || false)
   const [hasIpres, setHasIpres] = useState(existingPatient?.has_ipres || false)
-
-  // Antécédents obstétricaux
   const [gravidity, setGravidity] = useState(String(existingPregnancy?.gravidity || 1))
   const [parity, setParity] = useState(String(existingPregnancy?.parity || 0))
   const [livingChildren, setLivingChildren] = useState(String(existingPregnancy?.living_children || 0))
   const [miscarriages, setMiscarriages] = useState(String(existingPregnancy?.miscarriages || 0))
   const [stillbirths, setStillbirths] = useState(String(existingPregnancy?.stillbirths || 0))
   const [neonatalDeaths, setNeonatalDeaths] = useState(String(existingPregnancy?.neonatal_deaths || 0))
-
-  // Antécédents personnels
   const [hasHypertension, setHasHypertension] = useState(existingPregnancy?.has_hypertension || false)
   const [hasDiabetes, setHasDiabetes] = useState(existingPregnancy?.has_diabetes || false)
   const [hasHiv, setHasHiv] = useState(existingPregnancy?.has_hiv || false)
@@ -504,134 +484,52 @@ function PatientForm({ profile, setView, mode = 'create', existingPatient = null
   const [hasPreviousCsection, setHasPreviousCsection] = useState(existingPregnancy?.has_previous_csection || false)
   const [hasPreviousHemorrhage, setHasPreviousHemorrhage] = useState(existingPregnancy?.has_previous_hemorrhage || false)
   const [hasPreviousPreeclampsia, setHasPreviousPreeclampsia] = useState(existingPregnancy?.has_previous_preeclampsia || false)
-
-  // Antécédents familiaux
   const [familyHta, setFamilyHta] = useState(existingPregnancy?.family_hta || false)
   const [familyDiabetes, setFamilyDiabetes] = useState(existingPregnancy?.family_diabetes || false)
   const [familySickleCell, setFamilySickleCell] = useState(existingPregnancy?.family_sickle_cell || false)
   const [familyTwins, setFamilyTwins] = useState(existingPregnancy?.family_twins || false)
-
-  // Mode de vie
   const [smokes, setSmokes] = useState(existingPregnancy?.smokes || false)
   const [drinksAlcohol, setDrinksAlcohol] = useState(existingPregnancy?.drinks_alcohol || false)
   const [usesTraditionalMedicine, setUsesTraditionalMedicine] = useState(existingPregnancy?.uses_traditional_medicine || false)
-
-  // Notes
   const [medicalHistoryNotes, setMedicalHistoryNotes] = useState(existingPregnancy?.medical_history_notes || '')
-
-  // Grossesse actuelle
   const [hasPregnancy, setHasPregnancy] = useState(mode === 'edit' ? !!existingPregnancy : true)
   const [lastPeriod, setLastPeriod] = useState(existingPregnancy?.last_period_date || '')
-
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
 
   const age = dob ? Math.floor((new Date() - new Date(dob)) / (1000 * 60 * 60 * 24 * 365.25)) : null
-  const riskData = {
-    has_hypertension: hasHypertension, has_diabetes: hasDiabetes, has_previous_hemorrhage: hasPreviousHemorrhage,
-    has_previous_preeclampsia: hasPreviousPreeclampsia, has_sickle_cell: hasSickleCell, has_hiv: hasHiv,
-    has_previous_csection: hasPreviousCsection, has_epilepsy: hasEpilepsy, has_anemia: hasAnemia,
-    family_hta: familyHta, family_diabetes: familyDiabetes, family_sickle_cell: familySickleCell,
-    smokes, drinks_alcohol: drinksAlcohol,
-    stillbirths, neonatal_deaths: neonatalDeaths, miscarriages, age, parity
-  }
+  const riskData = { has_hypertension: hasHypertension, has_diabetes: hasDiabetes, has_previous_hemorrhage: hasPreviousHemorrhage, has_previous_preeclampsia: hasPreviousPreeclampsia, has_sickle_cell: hasSickleCell, has_hiv: hasHiv, has_previous_csection: hasPreviousCsection, has_epilepsy: hasEpilepsy, has_anemia: hasAnemia, family_hta: familyHta, family_diabetes: familyDiabetes, family_sickle_cell: familySickleCell, smokes, drinks_alcohol: drinksAlcohol, stillbirths, neonatal_deaths: neonatalDeaths, miscarriages, age, parity }
   const risk = calculateRiskScore(riskData)
 
   async function handleSubmit(e) {
-    e.preventDefault()
-    setLoading(true); setError(null)
+    e.preventDefault(); setLoading(true); setError(null)
     try {
-      let patientId
-      let ipu
-
+      let patientId, ipu
       if (mode === 'create') {
-        // CRÉATION via RPC
-        const { data: result, error: rpcError } = await supabase.rpc('create_patient_by_pro', {
-          p_first_name: firstName, p_last_name: lastName, p_phone: '+221' + phone,
-          p_date_of_birth: dob || null, p_city: city || null, p_region: region || null,
-          p_blood_type: bloodType || null, p_preferred_language: 'fr'
-        })
+        const { data: result, error: rpcError } = await supabase.rpc('create_patient_by_pro', { p_first_name: firstName, p_last_name: lastName, p_phone: '+221' + phone, p_date_of_birth: dob || null, p_city: city || null, p_region: region || null, p_blood_type: bloodType || null, p_preferred_language: 'fr' })
         if (rpcError) throw rpcError
         if (!result || result.length === 0) throw new Error('Création échouée')
-        patientId = result[0].patient_id
-        ipu = result[0].ipu
+        patientId = result[0].patient_id; ipu = result[0].ipu
       } else {
-        // ÉDITION
-        patientId = existingPatient.id
-        ipu = existingPatient.ipu
-        const { error: updError } = await supabase.from('profiles').update({
-          first_name: firstName, last_name: lastName, phone: '+221' + phone,
-          date_of_birth: dob || null, city: city || null, region: region || null
-        }).eq('id', patientId)
+        patientId = existingPatient.id; ipu = existingPatient.ipu
+        const { error: updError } = await supabase.from('profiles').update({ first_name: firstName, last_name: lastName, phone: '+221' + phone, date_of_birth: dob || null, city: city || null, region: region || null }).eq('id', patientId)
         if (updError) throw updError
       }
-
-      // Mise à jour profil avec infos sociales
-      await supabase.from('profiles').update({
-        marital_status: maritalStatus || null,
-        number_of_marriages: parseInt(numberOfMarriages) || 0,
-        occupation: occupation || null,
-        education_level: educationLevel || null,
-        has_cmu: hasCmu, has_ipres: hasIpres
-      }).eq('id', patientId)
-
-      // Grossesse : créer ou modifier
+      await supabase.from('profiles').update({ marital_status: maritalStatus || null, number_of_marriages: parseInt(numberOfMarriages) || 0, occupation: occupation || null, education_level: educationLevel || null, has_cmu: hasCmu, has_ipres: hasIpres }).eq('id', patientId)
       if (hasPregnancy && lastPeriod) {
-        const ddr = new Date(lastPeriod)
-        const term = new Date(ddr); term.setDate(term.getDate() + 280)
-        const pregData = {
-          gravidity: parseInt(gravidity), parity: parseInt(parity),
-          living_children: parseInt(livingChildren), miscarriages: parseInt(miscarriages),
-          stillbirths: parseInt(stillbirths), neonatal_deaths: parseInt(neonatalDeaths),
-          blood_type: bloodType || null,
-          has_hypertension: hasHypertension, has_diabetes: hasDiabetes, has_hiv: hasHiv,
-          has_sickle_cell: hasSickleCell, has_asthma: hasAsthma, has_epilepsy: hasEpilepsy,
-          has_anemia: hasAnemia, has_thyroid: hasThyroid,
-          has_previous_csection: hasPreviousCsection, has_previous_hemorrhage: hasPreviousHemorrhage,
-          has_previous_preeclampsia: hasPreviousPreeclampsia,
-          family_hta: familyHta, family_diabetes: familyDiabetes,
-          family_sickle_cell: familySickleCell, family_twins: familyTwins,
-          smokes, drinks_alcohol: drinksAlcohol, uses_traditional_medicine: usesTraditionalMedicine,
-          medical_history_notes: medicalHistoryNotes || null,
-          current_risk_level: risk.level
-        }
+        const ddr = new Date(lastPeriod); const term = new Date(ddr); term.setDate(term.getDate() + 280)
+        const pregData = { gravidity: parseInt(gravidity), parity: parseInt(parity), living_children: parseInt(livingChildren), miscarriages: parseInt(miscarriages), stillbirths: parseInt(stillbirths), neonatal_deaths: parseInt(neonatalDeaths), blood_type: bloodType || null, has_hypertension: hasHypertension, has_diabetes: hasDiabetes, has_hiv: hasHiv, has_sickle_cell: hasSickleCell, has_asthma: hasAsthma, has_epilepsy: hasEpilepsy, has_anemia: hasAnemia, has_thyroid: hasThyroid, has_previous_csection: hasPreviousCsection, has_previous_hemorrhage: hasPreviousHemorrhage, has_previous_preeclampsia: hasPreviousPreeclampsia, family_hta: familyHta, family_diabetes: familyDiabetes, family_sickle_cell: familySickleCell, family_twins: familyTwins, smokes, drinks_alcohol: drinksAlcohol, uses_traditional_medicine: usesTraditionalMedicine, medical_history_notes: medicalHistoryNotes || null, current_risk_level: risk.level }
         if (mode === 'create') {
-          const { error: pe } = await supabase.from('pregnancies').insert({
-            woman_id: patientId, status: 'en_cours',
-            last_period_date: lastPeriod, expected_delivery_date: term.toISOString().split('T')[0],
-            ...pregData, created_by: profile.id
-          })
-          if (pe) throw pe
+          const { error: pe } = await supabase.from('pregnancies').insert({ woman_id: patientId, status: 'en_cours', last_period_date: lastPeriod, expected_delivery_date: term.toISOString().split('T')[0], ...pregData, created_by: profile.id }); if (pe) throw pe
         } else if (existingPregnancy) {
-          const { error: pe } = await supabase.from('pregnancies').update({
-            last_period_date: lastPeriod, expected_delivery_date: term.toISOString().split('T')[0],
-            ...pregData
-          }).eq('id', existingPregnancy.id)
-          if (pe) throw pe
+          const { error: pe } = await supabase.from('pregnancies').update({ last_period_date: lastPeriod, expected_delivery_date: term.toISOString().split('T')[0], ...pregData }).eq('id', existingPregnancy.id); if (pe) throw pe
         } else {
-          // Mode edit mais pas de grossesse existante → créer
-          const { error: pe } = await supabase.from('pregnancies').insert({
-            woman_id: patientId, status: 'en_cours',
-            last_period_date: lastPeriod, expected_delivery_date: term.toISOString().split('T')[0],
-            ...pregData, created_by: profile.id
-          })
-          if (pe) throw pe
+          const { error: pe } = await supabase.from('pregnancies').insert({ woman_id: patientId, status: 'en_cours', last_period_date: lastPeriod, expected_delivery_date: term.toISOString().split('T')[0], ...pregData, created_by: profile.id }); if (pe) throw pe
         }
       }
-
-      // Notification à la patiente si modification
-      if (mode === 'edit') {
-        await sendNotification(patientId, 'pregnancy_updated',
-          '📝 Votre dossier a été mis à jour',
-          `${profile.first_name} ${profile.last_name} a modifié des informations dans votre dossier médical.`,
-          { updated_by: profile.id },
-          profile.id
-        )
-      }
-
-      setSuccess({ ipu, patientId, mode })
-      setLoading(false)
+      if (mode === 'edit') { await sendNotification(patientId, 'pregnancy_updated', '📝 Votre dossier a été mis à jour', `${profile.first_name} ${profile.last_name} a modifié des informations dans votre dossier médical.`, { updated_by: profile.id }, profile.id) }
+      setSuccess({ ipu, patientId, mode }); setLoading(false)
     } catch (err) { setError(err.message); setLoading(false) }
   }
 
@@ -639,16 +537,9 @@ function PatientForm({ profile, setView, mode = 'create', existingPatient = null
     return (
       <div style={{ ...cardStyle, textAlign: 'center', padding: 40 }}>
         <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg, #2D5F5D 0%, #1F4341 100%)', color: '#FAF6F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, margin: '0 auto', marginBottom: 20 }}>✓</div>
-        <h2 style={{ fontSize: 26, fontFamily: 'Georgia, serif' }}>
-          {success.mode === 'create' ? 'Patiente créée !' : 'Modifications sauvegardées !'}
-        </h2>
+        <h2 style={{ fontSize: 26, fontFamily: 'Georgia, serif' }}>{success.mode === 'create' ? 'Patiente créée !' : 'Modifications sauvegardées !'}</h2>
         <p style={{ fontSize: 14, color: '#5D4037', marginTop: 12 }}>{firstName} {lastName}</p>
-        {success.mode === 'create' && (
-          <div style={{ marginTop: 20, padding: 16, background: '#F4E4C1', borderRadius: 14 }}>
-            <div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 700, textTransform: 'uppercase' }}>IPU à donner à la patiente</div>
-            <div style={{ fontSize: 28, fontWeight: 700, fontFamily: 'monospace', marginTop: 6 }}>{success.ipu}</div>
-          </div>
-        )}
+        {success.mode === 'create' && (<div style={{ marginTop: 20, padding: 16, background: '#F4E4C1', borderRadius: 14 }}><div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 700, textTransform: 'uppercase' }}>IPU à donner à la patiente</div><div style={{ fontSize: 28, fontWeight: 700, fontFamily: 'monospace', marginTop: 6 }}>{success.ipu}</div></div>)}
         <div style={{ marginTop: 20, display: 'flex', gap: 10 }}>
           <button onClick={() => setView({ name: 'patient', data: success.patientId })} style={{ ...primaryButtonStyle, flex: 1 }}>Voir le dossier →</button>
           <button onClick={() => setView({ name: 'home' })} style={{ ...primaryButtonStyle, flex: 1, background: '#F5F1EB', color: '#5D4037', boxShadow: 'none' }}>Retour</button>
@@ -665,64 +556,26 @@ function PatientForm({ profile, setView, mode = 'create', existingPatient = null
           <div><label style={labelStyle}>Nom *</label><input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} required style={inputStyle}/></div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 14 }}>
-          <div>
-            <label style={labelStyle}>Téléphone *</label>
-            <div style={{ display: 'flex', alignItems: 'center', background: '#FFFFFF', borderRadius: 12, border: '2px solid rgba(42,24,16,0.08)', overflow: 'hidden' }}>
-              <span style={{ padding: '11px 12px', fontWeight: 600, borderRight: '1px solid rgba(42,24,16,0.1)', fontSize: 13 }}>🇸🇳 +221</span>
-              <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="77 123 45 67" required style={{ ...inputStyle, border: 'none' }}/>
-            </div>
-          </div>
+          <div><label style={labelStyle}>Téléphone *</label><div style={{ display: 'flex', alignItems: 'center', background: '#FFFFFF', borderRadius: 12, border: '2px solid rgba(42,24,16,0.08)', overflow: 'hidden' }}><span style={{ padding: '11px 12px', fontWeight: 600, borderRight: '1px solid rgba(42,24,16,0.1)', fontSize: 13 }}>🇸🇳 +221</span><input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="77 123 45 67" required style={{ ...inputStyle, border: 'none' }}/></div></div>
           <div><label style={labelStyle}>Date de naissance</label><input type="date" value={dob} onChange={(e) => setDob(e.target.value)} style={inputStyle}/>{age && <div style={{ fontSize: 10, color: '#8B6F5C', marginTop: 2 }}>{age} ans</div>}</div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginTop: 14 }}>
           <div><label style={labelStyle}>Ville</label><input type="text" value={city} onChange={(e) => setCity(e.target.value)} style={inputStyle}/></div>
-          <div><label style={labelStyle}>Région</label>
-            <select value={region} onChange={(e) => setRegion(e.target.value)} style={inputStyle}>
-              <option value="">—</option>
-              {['Dakar','Thiès','Diourbel','Fatick','Kaffrine','Kaolack','Kédougou','Kolda','Louga','Matam','Saint-Louis','Sédhiou','Tambacounda','Ziguinchor'].map(r => <option key={r} value={r}>{r}</option>)}
-            </select>
-          </div>
-          <div><label style={labelStyle}>Groupe sanguin</label>
-            <select value={bloodType} onChange={(e) => setBloodType(e.target.value)} style={inputStyle}>
-              <option value="">—</option>
-              {['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(b => <option key={b} value={b}>{b}</option>)}
-            </select>
-          </div>
+          <div><label style={labelStyle}>Région</label><select value={region} onChange={(e) => setRegion(e.target.value)} style={inputStyle}><option value="">—</option>{['Dakar','Thiès','Diourbel','Fatick','Kaffrine','Kaolack','Kédougou','Kolda','Louga','Matam','Saint-Louis','Sédhiou','Tambacounda','Ziguinchor'].map(r => <option key={r} value={r}>{r}</option>)}</select></div>
+          <div><label style={labelStyle}>Groupe sanguin</label><select value={bloodType} onChange={(e) => setBloodType(e.target.value)} style={inputStyle}><option value="">—</option>{['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(b => <option key={b} value={b}>{b}</option>)}</select></div>
         </div>
       </FormSection>
-
       <FormSection number="2" title="Vie sociale">
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-          <div><label style={labelStyle}>Statut matrimonial</label>
-            <select value={maritalStatus} onChange={(e) => setMaritalStatus(e.target.value)} style={inputStyle}>
-              <option value="">—</option>
-              <option value="celibataire">Célibataire</option><option value="mariee">Mariée</option>
-              <option value="union_libre">Union libre</option><option value="divorcee">Divorcée</option>
-              <option value="veuve">Veuve</option>
-            </select>
-          </div>
+          <div><label style={labelStyle}>Statut matrimonial</label><select value={maritalStatus} onChange={(e) => setMaritalStatus(e.target.value)} style={inputStyle}><option value="">—</option><option value="celibataire">Célibataire</option><option value="mariee">Mariée</option><option value="union_libre">Union libre</option><option value="divorcee">Divorcée</option><option value="veuve">Veuve</option></select></div>
           <div><label style={labelStyle}>Nombre de mariages</label><input type="number" min="0" value={numberOfMarriages} onChange={(e) => setNumberOfMarriages(e.target.value)} style={inputStyle}/></div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 14 }}>
           <div><label style={labelStyle}>Profession</label><input type="text" value={occupation} onChange={(e) => setOccupation(e.target.value)} placeholder="Ex: Commerçante" style={inputStyle}/></div>
-          <div><label style={labelStyle}>Niveau d'éducation</label>
-            <select value={educationLevel} onChange={(e) => setEducationLevel(e.target.value)} style={inputStyle}>
-              <option value="">—</option>
-              <option value="aucun">Aucune scolarisation</option><option value="primaire">Primaire</option>
-              <option value="college">Collège</option><option value="lycee">Lycée</option>
-              <option value="superieur">Supérieur</option>
-            </select>
-          </div>
+          <div><label style={labelStyle}>Niveau d'éducation</label><select value={educationLevel} onChange={(e) => setEducationLevel(e.target.value)} style={inputStyle}><option value="">—</option><option value="aucun">Aucune scolarisation</option><option value="primaire">Primaire</option><option value="college">Collège</option><option value="lycee">Lycée</option><option value="superieur">Supérieur</option></select></div>
         </div>
-        <div style={{ marginTop: 14 }}>
-          <label style={labelStyle}>Couverture santé</label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            <CheckboxField label="CMU" checked={hasCmu} onChange={setHasCmu}/>
-            <CheckboxField label="IPRES" checked={hasIpres} onChange={setHasIpres}/>
-          </div>
-        </div>
+        <div style={{ marginTop: 14 }}><label style={labelStyle}>Couverture santé</label><div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}><CheckboxField label="CMU" checked={hasCmu} onChange={setHasCmu}/><CheckboxField label="IPRES" checked={hasIpres} onChange={setHasIpres}/></div></div>
       </FormSection>
-
       <FormSection number="3" title="Antécédents obstétricaux">
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
           <div><label style={labelStyle}>Gestité (G)</label><input type="number" min="1" value={gravidity} onChange={(e) => setGravidity(e.target.value)} style={inputStyle}/><div style={{ fontSize: 10, color: '#8B6F5C', marginTop: 4 }}>Total grossesses</div></div>
@@ -735,88 +588,51 @@ function PatientForm({ profile, setView, mode = 'create', existingPatient = null
           <div><label style={labelStyle}>Décès néonatal</label><input type="number" min="0" value={neonatalDeaths} onChange={(e) => setNeonatalDeaths(e.target.value)} style={inputStyle}/></div>
         </div>
       </FormSection>
-
       <FormSection number="4" title="Antécédents personnels">
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          <CheckboxField label="HTA" checked={hasHypertension} onChange={setHasHypertension}/>
-          <CheckboxField label="Diabète" checked={hasDiabetes} onChange={setHasDiabetes}/>
-          <CheckboxField label="VIH" checked={hasHiv} onChange={setHasHiv}/>
-          <CheckboxField label="Drépanocytose" checked={hasSickleCell} onChange={setHasSickleCell}/>
-          <CheckboxField label="Asthme" checked={hasAsthma} onChange={setHasAsthma}/>
-          <CheckboxField label="Épilepsie" checked={hasEpilepsy} onChange={setHasEpilepsy}/>
-          <CheckboxField label="Anémie" checked={hasAnemia} onChange={setHasAnemia}/>
-          <CheckboxField label="Thyroïde" checked={hasThyroid} onChange={setHasThyroid}/>
-          <CheckboxField label="Antécédent césarienne" checked={hasPreviousCsection} onChange={setHasPreviousCsection}/>
-          <CheckboxField label="Antécédent HPP" checked={hasPreviousHemorrhage} onChange={setHasPreviousHemorrhage}/>
+          <CheckboxField label="HTA" checked={hasHypertension} onChange={setHasHypertension}/><CheckboxField label="Diabète" checked={hasDiabetes} onChange={setHasDiabetes}/>
+          <CheckboxField label="VIH" checked={hasHiv} onChange={setHasHiv}/><CheckboxField label="Drépanocytose" checked={hasSickleCell} onChange={setHasSickleCell}/>
+          <CheckboxField label="Asthme" checked={hasAsthma} onChange={setHasAsthma}/><CheckboxField label="Épilepsie" checked={hasEpilepsy} onChange={setHasEpilepsy}/>
+          <CheckboxField label="Anémie" checked={hasAnemia} onChange={setHasAnemia}/><CheckboxField label="Thyroïde" checked={hasThyroid} onChange={setHasThyroid}/>
+          <CheckboxField label="Antécédent césarienne" checked={hasPreviousCsection} onChange={setHasPreviousCsection}/><CheckboxField label="Antécédent HPP" checked={hasPreviousHemorrhage} onChange={setHasPreviousHemorrhage}/>
           <CheckboxField label="Pré-éclampsie ant." checked={hasPreviousPreeclampsia} onChange={setHasPreviousPreeclampsia}/>
         </div>
       </FormSection>
-
       <FormSection number="5" title="Antécédents familiaux">
         <div style={{ fontSize: 12, color: '#8B6F5C', marginBottom: 12 }}>Cocher si présent chez les parents ou la fratrie</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          <CheckboxField label="HTA familiale" checked={familyHta} onChange={setFamilyHta}/>
-          <CheckboxField label="Diabète familial" checked={familyDiabetes} onChange={setFamilyDiabetes}/>
-          <CheckboxField label="Drépanocytose familiale" checked={familySickleCell} onChange={setFamilySickleCell}/>
-          <CheckboxField label="Jumeaux dans la famille" checked={familyTwins} onChange={setFamilyTwins}/>
+          <CheckboxField label="HTA familiale" checked={familyHta} onChange={setFamilyHta}/><CheckboxField label="Diabète familial" checked={familyDiabetes} onChange={setFamilyDiabetes}/>
+          <CheckboxField label="Drépanocytose familiale" checked={familySickleCell} onChange={setFamilySickleCell}/><CheckboxField label="Jumeaux dans la famille" checked={familyTwins} onChange={setFamilyTwins}/>
         </div>
       </FormSection>
-
       <FormSection number="6" title="Mode de vie">
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-          <CheckboxField label="🚬 Tabac" checked={smokes} onChange={setSmokes}/>
-          <CheckboxField label="🍺 Alcool" checked={drinksAlcohol} onChange={setDrinksAlcohol}/>
-          <CheckboxField label="🌿 Médecine traditionnelle" checked={usesTraditionalMedicine} onChange={setUsesTraditionalMedicine}/>
+          <CheckboxField label="🚬 Tabac" checked={smokes} onChange={setSmokes}/><CheckboxField label="🍺 Alcool" checked={drinksAlcohol} onChange={setDrinksAlcohol}/><CheckboxField label="🌿 Médecine traditionnelle" checked={usesTraditionalMedicine} onChange={setUsesTraditionalMedicine}/>
         </div>
       </FormSection>
-
       <FormSection number="7" title="Notes médicales">
         <textarea value={medicalHistoryNotes} onChange={(e) => setMedicalHistoryNotes(e.target.value)} rows={3} placeholder="Allergies, traitements, observations..." style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}/>
       </FormSection>
-
       <FormSection number="8" title="Grossesse actuelle">
         <div style={{ display: 'flex', gap: 4, background: '#F5F1EB', borderRadius: 10, padding: 3, marginBottom: 14 }}>
           <button type="button" onClick={() => setHasPregnancy(true)} style={{ flex: 1, padding: 10, borderRadius: 8, background: hasPregnancy ? '#C44536' : 'transparent', color: hasPregnancy ? '#FAF6F0' : '#5D4037', fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Grossesse en cours</button>
           <button type="button" onClick={() => setHasPregnancy(false)} style={{ flex: 1, padding: 10, borderRadius: 8, background: !hasPregnancy ? '#FFFFFF' : 'transparent', color: !hasPregnancy ? '#2a1810' : '#5D4037', fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Pas de grossesse</button>
         </div>
-        {hasPregnancy && (
-          <div>
-            <label style={labelStyle}>DDR (Date des Dernières Règles) *</label>
-            <input type="date" value={lastPeriod} onChange={(e) => setLastPeriod(e.target.value)} required={hasPregnancy} style={inputStyle}/>
-          </div>
-        )}
+        {hasPregnancy && (<div><label style={labelStyle}>DDR (Date des Dernières Règles) *</label><input type="date" value={lastPeriod} onChange={(e) => setLastPeriod(e.target.value)} required={hasPregnancy} style={inputStyle}/></div>)}
       </FormSection>
-
-      {/* 🤖 SCORE IA - mis à jour en temps réel */}
       {hasPregnancy && (
         <div style={{ marginTop: 16, padding: 18, background: 'linear-gradient(135deg, #FFFFFF 0%, #F5F1EB 100%)', border: `2px solid ${risk.color}`, borderRadius: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
             <div style={{ width: 44, height: 44, borderRadius: 12, background: risk.color, color: '#FAF6F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🤖</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>IA · Évaluation automatique du risque</div>
-              <div style={{ fontSize: 22, fontFamily: 'Georgia, serif', fontWeight: 700, color: risk.color, marginTop: 2 }}>{risk.badge} Risque {risk.label}</div>
-            </div>
+            <div style={{ flex: 1 }}><div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>IA · Évaluation automatique du risque</div><div style={{ fontSize: 22, fontFamily: 'Georgia, serif', fontWeight: 700, color: risk.color, marginTop: 2 }}>{risk.badge} Risque {risk.label}</div></div>
             <div style={{ padding: '6px 14px', background: risk.color, color: '#FAF6F0', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>Score: {risk.score}</div>
           </div>
-          {risk.factors.length > 0 && (
-            <div>
-              <div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 700, marginBottom: 8 }}>Facteurs détectés ({risk.factors.length}):</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {risk.factors.map((f, i) => (
-                  <div key={i} style={{ padding: '4px 10px', background: '#FFFFFF', borderRadius: 6, fontSize: 11, color: '#5D4037', border: '1px solid rgba(42,24,16,0.06)' }}>{f.label} <span style={{ color: '#C44536', fontWeight: 700 }}>+{f.weight}</span></div>
-                ))}
-              </div>
-            </div>
-          )}
+          {risk.factors.length > 0 && (<div><div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 700, marginBottom: 8 }}>Facteurs détectés ({risk.factors.length}):</div><div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{risk.factors.map((f, i) => (<div key={i} style={{ padding: '4px 10px', background: '#FFFFFF', borderRadius: 6, fontSize: 11, color: '#5D4037', border: '1px solid rgba(42,24,16,0.06)' }}>{f.label} <span style={{ color: '#C44536', fontWeight: 700 }}>+{f.weight}</span></div>))}</div></div>)}
           {risk.factors.length === 0 && <div style={{ fontSize: 12, color: '#1F4341', fontStyle: 'italic' }}>Aucun facteur de risque majeur détecté.</div>}
-          <div style={{ marginTop: 12, padding: 10, background: '#F5F1EB', borderRadius: 8, fontSize: 11, color: '#5D4037', fontStyle: 'italic' }}>
-            ℹ️ Évaluation algorithmique. Reste à la sage-femme/médecin de juger cliniquement. Score recalculé automatiquement à chaque CPN.
-          </div>
+          <div style={{ marginTop: 12, padding: 10, background: '#F5F1EB', borderRadius: 8, fontSize: 11, color: '#5D4037', fontStyle: 'italic' }}>ℹ️ Évaluation algorithmique. Reste à la sage-femme/médecin de juger cliniquement.</div>
         </div>
       )}
-
       {error && <div style={{ marginTop: 16, padding: 14, background: '#FFE8E2', borderRadius: 12, color: '#8B2E26' }}>⚠️ {error}</div>}
-
       <div style={{ marginTop: 20, display: 'flex', gap: 10, marginBottom: 32 }}>
         <button type="button" onClick={() => setView({ name: mode === 'edit' ? 'patient' : 'home', data: mode === 'edit' ? existingPatient?.id : null })} style={{ flex: 1, padding: 14, background: '#F5F1EB', color: '#5D4037', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Annuler</button>
         <button type="submit" disabled={loading} style={{ flex: 2, ...primaryButtonStyle, background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', opacity: loading ? 0.6 : 1 }}>{loading ? '...' : (mode === 'edit' ? '💾 Sauvegarder les modifications' : '✓ Créer la patiente')}</button>
@@ -826,110 +642,32 @@ function PatientForm({ profile, setView, mode = 'create', existingPatient = null
 }
 
 function FormSection({ number, title, children }) {
-  return (
-    <div style={{ ...cardStyle, marginTop: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-        <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', color: '#FAF6F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700 }}>{number}</div>
-        <div style={{ fontSize: 18, fontWeight: 600, fontFamily: 'Georgia, serif' }}>{title}</div>
-      </div>
-      {children}
-    </div>
-  )
+  return (<div style={{ ...cardStyle, marginTop: 16 }}><div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}><div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', color: '#FAF6F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700 }}>{number}</div><div style={{ fontSize: 18, fontWeight: 600, fontFamily: 'Georgia, serif' }}>{title}</div></div>{children}</div>)
 }
-
 function CheckboxField({ label, checked, onChange }) {
-  return (
-    <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 10, background: checked ? '#FFE8E2' : '#F5F1EB', borderRadius: 10, cursor: 'pointer', border: checked ? '1px solid #C44536' : '1px solid transparent', fontSize: 13, fontWeight: 500 }}>
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} style={{ accentColor: '#C44536' }}/>
-      <span>{label}</span>
-    </label>
-  )
+  return (<label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 10, background: checked ? '#FFE8E2' : '#F5F1EB', borderRadius: 10, cursor: 'pointer', border: checked ? '1px solid #C44536' : '1px solid transparent', fontSize: 13, fontWeight: 500 }}><input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} style={{ accentColor: '#C44536' }}/><span>{label}</span></label>)
 }
-
 function RequestExistingPatientForm({ openPatientDossier }) {
-  const [ipu, setIpu] = useState('')
-  const [error, setError] = useState(null)
-  async function handleSearch(e) {
-    e.preventDefault(); setError(null)
-    const { data } = await supabase.from('profiles').select('id').eq('ipu', ipu.trim().toUpperCase()).eq('role', 'femme').maybeSingle()
-    if (!data) setError(`Aucune patiente trouvée avec l'IPU ${ipu.toUpperCase()}`)
-    else openPatientDossier(data.id)
-  }
-  return (
-    <div style={cardStyle}>
-      <div style={{ fontSize: 18, fontFamily: 'Georgia, serif', marginBottom: 16 }}>Patiente déjà inscrite</div>
-      <form onSubmit={handleSearch}>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input type="text" value={ipu} onChange={(e) => setIpu(e.target.value.toUpperCase())} placeholder="SN-2026-XXXXXX" required style={{ ...inputStyle, fontFamily: 'monospace', flex: 1 }}/>
-          <button type="submit" disabled={ipu.length < 6} style={{ padding: '12px 24px', background: ipu.length >= 6 ? 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)' : '#F5F1EB', color: ipu.length >= 6 ? '#FAF6F0' : '#8B6F5C', borderRadius: 12, fontWeight: 700, border: 'none', cursor: ipu.length >= 6 ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>Ouvrir</button>
-        </div>
-      </form>
-      {error && <div style={{ marginTop: 14, padding: 12, background: '#FFE8E2', borderRadius: 10, color: '#8B2E26', fontSize: 12 }}>⚠️ {error}</div>}
-    </div>
-  )
+  const [ipu, setIpu] = useState(''); const [error, setError] = useState(null)
+  async function handleSearch(e) { e.preventDefault(); setError(null); const { data } = await supabase.from('profiles').select('id').eq('ipu', ipu.trim().toUpperCase()).eq('role', 'femme').maybeSingle(); if (!data) setError(`Aucune patiente trouvée avec l'IPU ${ipu.toUpperCase()}`); else openPatientDossier(data.id) }
+  return (<div style={cardStyle}><div style={{ fontSize: 18, fontFamily: 'Georgia, serif', marginBottom: 16 }}>Patiente déjà inscrite</div><form onSubmit={handleSearch}><div style={{ display: 'flex', gap: 8 }}><input type="text" value={ipu} onChange={(e) => setIpu(e.target.value.toUpperCase())} placeholder="SN-2026-XXXXXX" required style={{ ...inputStyle, fontFamily: 'monospace', flex: 1 }}/><button type="submit" disabled={ipu.length < 6} style={{ padding: '12px 24px', background: ipu.length >= 6 ? 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)' : '#F5F1EB', color: ipu.length >= 6 ? '#FAF6F0' : '#8B6F5C', borderRadius: 12, fontWeight: 700, border: 'none', cursor: ipu.length >= 6 ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>Ouvrir</button></div></form>{error && <div style={{ marginTop: 14, padding: 12, background: '#FFE8E2', borderRadius: 10, color: '#8B2E26', fontSize: 12 }}>⚠️ {error}</div>}</div>)
 }
-
 function SearchExistingPatientForm({ openPatientDossier }) {
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState([])
-  async function handleSearch(e) {
-    e.preventDefault()
-    if (query.length < 2) return
-    const { data } = await supabase.from('profiles').select('id, first_name, last_name, ipu, phone').eq('role', 'femme').or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,phone.ilike.%${query}%`).limit(20)
-    setResults(data || [])
-  }
-  return (
-    <div>
-      <div style={cardStyle}>
-        <form onSubmit={handleSearch}>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Nom, prénom ou téléphone" style={{ ...inputStyle, flex: 1 }}/>
-            <button type="submit" disabled={query.length < 2} style={{ padding: '12px 24px', background: query.length >= 2 ? 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)' : '#F5F1EB', color: query.length >= 2 ? '#FAF6F0' : '#8B6F5C', borderRadius: 12, fontWeight: 700, border: 'none', cursor: query.length >= 2 ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>🔍 Rechercher</button>
-          </div>
-        </form>
-      </div>
-      {results.length > 0 && (
-        <div style={{ ...cardStyle, marginTop: 16 }}>
-          {results.map(p => (
-            <button key={p.id} onClick={() => openPatientDossier(p.id)} style={{ ...patientRowStyle, marginBottom: 8 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', color: '#FAF6F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>{p.first_name?.[0]}{p.last_name?.[0]}</div>
-              <div style={{ flex: 1, textAlign: 'left' }}>
-                <div style={{ fontSize: 14, fontWeight: 700 }}>{p.first_name} {p.last_name}</div>
-                <div style={{ fontSize: 11, color: '#8B6F5C', fontFamily: 'monospace' }}>{p.ipu}</div>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  )
+  const [query, setQuery] = useState(''); const [results, setResults] = useState([])
+  async function handleSearch(e) { e.preventDefault(); if (query.length < 2) return; const { data } = await supabase.from('profiles').select('id, first_name, last_name, ipu, phone').eq('role', 'femme').or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,phone.ilike.%${query}%`).limit(20); setResults(data || []) }
+  return (<div><div style={cardStyle}><form onSubmit={handleSearch}><div style={{ display: 'flex', gap: 8 }}><input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Nom, prénom ou téléphone" style={{ ...inputStyle, flex: 1 }}/><button type="submit" disabled={query.length < 2} style={{ padding: '12px 24px', background: query.length >= 2 ? 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)' : '#F5F1EB', color: query.length >= 2 ? '#FAF6F0' : '#8B6F5C', borderRadius: 12, fontWeight: 700, border: 'none', cursor: query.length >= 2 ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>🔍 Rechercher</button></div></form></div>{results.length > 0 && (<div style={{ ...cardStyle, marginTop: 16 }}>{results.map(p => (<button key={p.id} onClick={() => openPatientDossier(p.id)} style={{ ...patientRowStyle, marginBottom: 8 }}><div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, #C44536 0%, #8B2E26 100%)', color: '#FAF6F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>{p.first_name?.[0]}{p.last_name?.[0]}</div><div style={{ flex: 1, textAlign: 'left' }}><div style={{ fontSize: 14, fontWeight: 700 }}>{p.first_name} {p.last_name}</div><div style={{ fontSize: 11, color: '#8B6F5C', fontFamily: 'monospace' }}>{p.ipu}</div></div></button>))}</div>)}</div>)
 }
 
-// ⚠️ Les composants suivants sont définis dans PARTIE 2 :
-// PatientFileView, NewCPNView, NewPregnancyView, AlertDetailView
-
 // =====================================================
-// STYLES PARTAGÉS
-// =====================================================
-
-// =====================================================
-// SYSTÈME DE NOTIFICATIONS
+// NOTIFICATIONS
 // =====================================================
 async function sendNotification(womanId, type, title, message, metadata = {}, createdBy = null) {
-  try {
-    await supabase.from('notifications').insert({
-      woman_id: womanId,
-      type,
-      title,
-      message,
-      metadata,
-      created_by: createdBy
-    })
-  } catch (err) {
-    console.error('Notification error:', err)
-  }
+  try { await supabase.from('notifications').insert({ woman_id: womanId, type, title, message, metadata, created_by: createdBy }) } catch (err) { console.error('Notification error:', err) }
 }
 
+// =====================================================
+// PATIENT FILE VIEW — FIX: charge examens custom
+// =====================================================
 function PatientFileView({ profile, patientId, setView }) {
   const [patient, setPatient] = useState(null)
   const [currentPregnancy, setCurrentPregnancy] = useState(null)
@@ -955,8 +693,20 @@ function PatientFileView({ profile, patientId, setView }) {
           const { data: pros } = await supabase.from('profiles').select('id, first_name, last_name').in('id', proIds)
           setConsultations(cpns.map(c => ({ ...c, performed_by_profile: pros?.find(pro => pro.id === c.performed_by) })))
         } else setConsultations([])
+
+        // Charger examens standards via RPC
         const { data: dueExams } = await supabase.rpc('get_due_exams', { p_pregnancy_id: current.id })
-        setExams(dueExams || [])
+
+        // FIX: Charger aussi les examens custom (CUSTOM_*)
+        const { data: customExams } = await supabase.from('exam_results').select('*').eq('pregnancy_id', current.id).like('exam_code', 'CUSTOM_%').order('prescribed_at', { ascending: false })
+        const customFormatted = (customExams || []).map(ce => ({
+          exam_code: ce.exam_code, exam_name_fr: null, exam_name_custom: ce.exam_name_custom,
+          recommended_at_week: null, description: null, current_status: ce.status,
+          is_late: false, result_value: ce.result_value, result_notes: ce.result_notes, is_abnormal: ce.is_abnormal
+        }))
+        const allExams = [...(dueExams || [])]
+        customFormatted.forEach(ce => { if (!allExams.find(e => e.exam_code === ce.exam_code)) allExams.push(ce) })
+        setExams(allExams)
       } else { setConsultations([]); setExams([]) }
     }
     setLoading(false)
@@ -979,7 +729,6 @@ function PatientFileView({ profile, patientId, setView }) {
   const weeks = currentPregnancy ? Math.floor((new Date() - new Date(currentPregnancy.last_period_date)) / (1000 * 60 * 60 * 24 * 7)) : null
   const age = patient.date_of_birth ? Math.floor((new Date() - new Date(patient.date_of_birth)) / (1000 * 60 * 60 * 24 * 365.25)) : null
   const lateExams = exams.filter(e => e.is_late).length
-
   const riskInfo = currentPregnancy ? calculateRiskScore(extractRiskDataFromPregnancy(currentPregnancy, patient)) : null
   const recommendation = riskInfo ? getRiskRecommendation(riskInfo.level) : null
 
@@ -1004,269 +753,61 @@ function PatientFileView({ profile, patientId, setView }) {
           )}
         </div>
       </header>
-
       <main style={{ padding: '24px 32px', maxWidth: 1400, margin: '0 auto' }}>
         <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid rgba(42,24,16,0.08)', marginBottom: 24 }}>
-          {[
-            { id: 'overview', label: '🏠 Vue d\'ensemble' },
-            { id: 'cpn', label: `🩺 CPN (${consultations.length})` },
-            { id: 'exams', label: `🧪 Examens${lateExams > 0 ? ` ⚠️${lateExams}` : ''}` },
-            { id: 'meds', label: '💊 Médicaments' },
-            { id: 'history', label: '📜 Historique' }
-          ].map(t => (
+          {[{ id: 'overview', label: '🏠 Vue d\'ensemble' }, { id: 'cpn', label: `🩺 CPN (${consultations.length})` }, { id: 'exams', label: `🧪 Examens${lateExams > 0 ? ` ⚠️${lateExams}` : ''}` }, { id: 'meds', label: '💊 Médicaments' }, { id: 'history', label: '📜 Historique' }].map(t => (
             <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: '14px 18px', fontSize: 13, fontWeight: 600, color: tab === t.id ? '#C44536' : '#8B6F5C', borderBottom: tab === t.id ? '2px solid #C44536' : '2px solid transparent', marginBottom: -1, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>{t.label}</button>
           ))}
         </div>
 
-        {/* TAB OVERVIEW */}
         {tab === 'overview' && (
           <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 16 }}>
-            {/* Colonne gauche - Score IA + vitals */}
             <div>
-              {riskInfo && (
-                <div style={{ ...cardStyle, borderTop: `4px solid ${riskInfo.color}`, marginBottom: 16 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-                    <div style={{ width: 50, height: 50, borderRadius: 14, background: riskInfo.color, color: '#FAF6F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>🤖</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 700, textTransform: 'uppercase' }}>IA · Évaluation du risque</div>
-                      <div style={{ fontSize: 22, fontFamily: 'Georgia, serif', fontWeight: 700, color: riskInfo.color, marginTop: 2 }}>{riskInfo.badge} Risque {riskInfo.label}</div>
-                    </div>
-                    <div style={{ padding: '6px 14px', background: riskInfo.color, color: '#FAF6F0', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>Score: {riskInfo.score}</div>
-                  </div>
-                  {riskInfo.factors.length > 0 && (
-                    <div style={{ marginBottom: 14 }}>
-                      <div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 700, marginBottom: 8 }}>Facteurs détectés:</div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        {riskInfo.factors.map((f, i) => (
-                          <div key={i} style={{ padding: '4px 10px', background: '#F5F1EB', borderRadius: 6, fontSize: 11, color: '#5D4037', border: '1px solid rgba(42,24,16,0.06)' }}>{f.label} <span style={{ color: '#C44536', fontWeight: 700 }}>+{f.weight}</span></div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {recommendation && (
-                    <div style={{ padding: 14, background: '#F5F1EB', borderRadius: 12 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: '#2a1810', marginBottom: 8 }}>📋 {recommendation.title}</div>
-                      <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: '#5D4037', lineHeight: 1.6 }}>
-                        {recommendation.recommendations.map((r, i) => <li key={i}>{r}</li>)}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Grossesse actuelle */}
-              {currentPregnancy ? (
-                <div style={cardStyle}>
-                  <div style={sectionLabelStyle}>Grossesse en cours</div>
-                  <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-                    <InfoItem label="SA" value={weeks ? `S${weeks}` : '—'}/>
-                    <InfoItem label="DDR" value={new Date(currentPregnancy.last_period_date).toLocaleDateString('fr-FR')}/>
-                    <InfoItem label="Terme" value={new Date(currentPregnancy.expected_delivery_date).toLocaleDateString('fr-FR')}/>
-                    <InfoItem label="G/P" value={`G${currentPregnancy.gravidity} P${currentPregnancy.parity}`}/>
-                    <InfoItem label="Enfants" value={currentPregnancy.living_children || 0}/>
-                    <InfoItem label="Groupe" value={currentPregnancy.blood_type || '—'}/>
-                  </div>
-                  {currentPregnancy.medical_history_notes && (
-                    <div style={{ marginTop: 14, padding: 12, background: '#F5F1EB', borderRadius: 10, fontSize: 12, color: '#5D4037' }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: '#8B6F5C', marginBottom: 4 }}>NOTES MÉDICALES</div>
-                      {currentPregnancy.medical_history_notes}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div style={{ ...cardStyle, textAlign: 'center', padding: 32 }}>
-                  <div style={{ fontSize: 40, marginBottom: 12 }}>🤰</div>
-                  <div style={{ fontSize: 14, color: '#5D4037' }}>Aucune grossesse en cours</div>
-                </div>
-              )}
+              {riskInfo && (<div style={{ ...cardStyle, borderTop: `4px solid ${riskInfo.color}`, marginBottom: 16 }}><div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}><div style={{ width: 50, height: 50, borderRadius: 14, background: riskInfo.color, color: '#FAF6F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>🤖</div><div style={{ flex: 1 }}><div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 700, textTransform: 'uppercase' }}>IA · Évaluation du risque</div><div style={{ fontSize: 22, fontFamily: 'Georgia, serif', fontWeight: 700, color: riskInfo.color, marginTop: 2 }}>{riskInfo.badge} Risque {riskInfo.label}</div></div><div style={{ padding: '6px 14px', background: riskInfo.color, color: '#FAF6F0', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>Score: {riskInfo.score}</div></div>{riskInfo.factors.length > 0 && (<div style={{ marginBottom: 14 }}><div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 700, marginBottom: 8 }}>Facteurs détectés:</div><div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{riskInfo.factors.map((f, i) => (<div key={i} style={{ padding: '4px 10px', background: '#F5F1EB', borderRadius: 6, fontSize: 11, color: '#5D4037', border: '1px solid rgba(42,24,16,0.06)' }}>{f.label} <span style={{ color: '#C44536', fontWeight: 700 }}>+{f.weight}</span></div>))}</div></div>)}{recommendation && (<div style={{ padding: 14, background: '#F5F1EB', borderRadius: 12 }}><div style={{ fontSize: 12, fontWeight: 700, color: '#2a1810', marginBottom: 8 }}>📋 {recommendation.title}</div><ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: '#5D4037', lineHeight: 1.6 }}>{recommendation.recommendations.map((r, i) => <li key={i}>{r}</li>)}</ul></div>)}</div>)}
+              {currentPregnancy ? (<div style={cardStyle}><div style={sectionLabelStyle}>Grossesse en cours</div><div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}><InfoItem label="SA" value={weeks ? `S${weeks}` : '—'}/><InfoItem label="DDR" value={new Date(currentPregnancy.last_period_date).toLocaleDateString('fr-FR')}/><InfoItem label="Terme" value={new Date(currentPregnancy.expected_delivery_date).toLocaleDateString('fr-FR')}/><InfoItem label="G/P" value={`G${currentPregnancy.gravidity} P${currentPregnancy.parity}`}/><InfoItem label="Enfants" value={currentPregnancy.living_children || 0}/><InfoItem label="Groupe" value={currentPregnancy.blood_type || '—'}/></div>{currentPregnancy.medical_history_notes && (<div style={{ marginTop: 14, padding: 12, background: '#F5F1EB', borderRadius: 10, fontSize: 12, color: '#5D4037' }}><div style={{ fontSize: 10, fontWeight: 700, color: '#8B6F5C', marginBottom: 4 }}>NOTES MÉDICALES</div>{currentPregnancy.medical_history_notes}</div>)}</div>) : (<div style={{ ...cardStyle, textAlign: 'center', padding: 32 }}><div style={{ fontSize: 40, marginBottom: 12 }}>🤰</div><div style={{ fontSize: 14, color: '#5D4037' }}>Aucune grossesse en cours</div></div>)}
             </div>
-
-            {/* Colonne droite - Antécédents */}
             <div>
-              <div style={cardStyle}>
-                <div style={sectionLabelStyle}>Antécédents médicaux</div>
-                <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {[
-                    [currentPregnancy?.has_hypertension, 'HTA'],
-                    [currentPregnancy?.has_diabetes, 'Diabète'],
-                    [currentPregnancy?.has_hiv, 'VIH'],
-                    [currentPregnancy?.has_sickle_cell, 'Drépano'],
-                    [currentPregnancy?.has_asthma, 'Asthme'],
-                    [currentPregnancy?.has_epilepsy, 'Épilepsie'],
-                    [currentPregnancy?.has_anemia, 'Anémie'],
-                    [currentPregnancy?.has_thyroid, 'Thyroïde'],
-                    [currentPregnancy?.has_previous_csection, 'Césarienne ant.'],
-                    [currentPregnancy?.has_previous_hemorrhage, 'HPP ant.'],
-                    [currentPregnancy?.has_previous_preeclampsia, 'Pré-éclampsie ant.']
-                  ].filter(([v]) => v).map(([, l], i) => (
-                    <Badge key={i} text={l} color="#C44536"/>
-                  ))}
-                  {![currentPregnancy?.has_hypertension, currentPregnancy?.has_diabetes, currentPregnancy?.has_hiv, currentPregnancy?.has_sickle_cell].some(Boolean) && (
-                    <div style={{ fontSize: 12, color: '#8B6F5C', fontStyle: 'italic' }}>Aucun antécédent personnel</div>
-                  )}
-                </div>
-              </div>
-              <div style={{ ...cardStyle, marginTop: 16 }}>
-                <div style={sectionLabelStyle}>Antécédents familiaux</div>
-                <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {[
-                    [currentPregnancy?.family_hta, 'HTA fam.'],
-                    [currentPregnancy?.family_diabetes, 'Diabète fam.'],
-                    [currentPregnancy?.family_sickle_cell, 'Drépano fam.'],
-                    [currentPregnancy?.family_twins, 'Jumeaux fam.']
-                  ].filter(([v]) => v).map(([, l], i) => (
-                    <Badge key={i} text={l} color="#D4A574"/>
-                  ))}
-                  {![currentPregnancy?.family_hta, currentPregnancy?.family_diabetes, currentPregnancy?.family_sickle_cell, currentPregnancy?.family_twins].some(Boolean) && (
-                    <div style={{ fontSize: 12, color: '#8B6F5C', fontStyle: 'italic' }}>Aucun antécédent familial</div>
-                  )}
-                </div>
-              </div>
-              <div style={{ ...cardStyle, marginTop: 16 }}>
-                <div style={sectionLabelStyle}>Mode de vie</div>
-                <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {currentPregnancy?.smokes && <Badge text="🚬 Tabac" color="#8B2E26"/>}
-                  {currentPregnancy?.drinks_alcohol && <Badge text="🍺 Alcool" color="#8B2E26"/>}
-                  {currentPregnancy?.uses_traditional_medicine && <Badge text="🌿 Médecine trad." color="#8B6F5C"/>}
-                  {!currentPregnancy?.smokes && !currentPregnancy?.drinks_alcohol && !currentPregnancy?.uses_traditional_medicine && (
-                    <div style={{ fontSize: 12, color: '#1F4341', fontStyle: 'italic' }}>✓ Aucun facteur</div>
-                  )}
-                </div>
-              </div>
-              <div style={{ ...cardStyle, marginTop: 16 }}>
-                <div style={sectionLabelStyle}>Situation sociale</div>
-                <div style={{ marginTop: 12, fontSize: 12, color: '#5D4037', lineHeight: 1.8 }}>
-                  <div>Statut: <strong>{patient.marital_status || '—'}</strong></div>
-                  <div>Profession: <strong>{patient.occupation || '—'}</strong></div>
-                  <div>Éducation: <strong>{patient.education_level || '—'}</strong></div>
-                  <div>Couverture: {patient.has_cmu && <Badge text="CMU" color="#2D5F5D"/>} {patient.has_ipres && <Badge text="IPRES" color="#2D5F5D"/>}{!patient.has_cmu && !patient.has_ipres && '—'}</div>
-                </div>
-              </div>
+              <div style={cardStyle}><div style={sectionLabelStyle}>Antécédents médicaux</div><div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 6 }}>{[[currentPregnancy?.has_hypertension,'HTA'],[currentPregnancy?.has_diabetes,'Diabète'],[currentPregnancy?.has_hiv,'VIH'],[currentPregnancy?.has_sickle_cell,'Drépano'],[currentPregnancy?.has_asthma,'Asthme'],[currentPregnancy?.has_epilepsy,'Épilepsie'],[currentPregnancy?.has_anemia,'Anémie'],[currentPregnancy?.has_thyroid,'Thyroïde'],[currentPregnancy?.has_previous_csection,'Césarienne ant.'],[currentPregnancy?.has_previous_hemorrhage,'HPP ant.'],[currentPregnancy?.has_previous_preeclampsia,'Pré-éclampsie ant.']].filter(([v]) => v).map(([,l], i) => (<Badge key={i} text={l} color="#C44536"/>))}{![currentPregnancy?.has_hypertension,currentPregnancy?.has_diabetes,currentPregnancy?.has_hiv,currentPregnancy?.has_sickle_cell].some(Boolean) && (<div style={{ fontSize: 12, color: '#8B6F5C', fontStyle: 'italic' }}>Aucun antécédent personnel</div>)}</div></div>
+              <div style={{ ...cardStyle, marginTop: 16 }}><div style={sectionLabelStyle}>Antécédents familiaux</div><div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 6 }}>{[[currentPregnancy?.family_hta,'HTA fam.'],[currentPregnancy?.family_diabetes,'Diabète fam.'],[currentPregnancy?.family_sickle_cell,'Drépano fam.'],[currentPregnancy?.family_twins,'Jumeaux fam.']].filter(([v]) => v).map(([,l], i) => (<Badge key={i} text={l} color="#D4A574"/>))}{![currentPregnancy?.family_hta,currentPregnancy?.family_diabetes,currentPregnancy?.family_sickle_cell,currentPregnancy?.family_twins].some(Boolean) && (<div style={{ fontSize: 12, color: '#8B6F5C', fontStyle: 'italic' }}>Aucun antécédent familial</div>)}</div></div>
+              <div style={{ ...cardStyle, marginTop: 16 }}><div style={sectionLabelStyle}>Mode de vie</div><div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 6 }}>{currentPregnancy?.smokes && <Badge text="🚬 Tabac" color="#8B2E26"/>}{currentPregnancy?.drinks_alcohol && <Badge text="🍺 Alcool" color="#8B2E26"/>}{currentPregnancy?.uses_traditional_medicine && <Badge text="🌿 Médecine trad." color="#8B6F5C"/>}{!currentPregnancy?.smokes && !currentPregnancy?.drinks_alcohol && !currentPregnancy?.uses_traditional_medicine && (<div style={{ fontSize: 12, color: '#1F4341', fontStyle: 'italic' }}>✓ Aucun facteur</div>)}</div></div>
+              <div style={{ ...cardStyle, marginTop: 16 }}><div style={sectionLabelStyle}>Situation sociale</div><div style={{ marginTop: 12, fontSize: 12, color: '#5D4037', lineHeight: 1.8 }}><div>Statut: <strong>{patient.marital_status || '—'}</strong></div><div>Profession: <strong>{patient.occupation || '—'}</strong></div><div>Éducation: <strong>{patient.education_level || '—'}</strong></div><div>Couverture: {patient.has_cmu && <Badge text="CMU" color="#2D5F5D"/>} {patient.has_ipres && <Badge text="IPRES" color="#2D5F5D"/>}{!patient.has_cmu && !patient.has_ipres && '—'}</div></div></div>
             </div>
           </div>
         )}
 
-        {/* TAB CPN */}
-        {tab === 'cpn' && (
-          <div>
-            {consultations.length === 0 ? (
-              <div style={{ ...cardStyle, textAlign: 'center', padding: 40 }}>
-                <div style={{ fontSize: 50, marginBottom: 12 }}>🩺</div>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>Aucune CPN enregistrée</div>
-                {currentPregnancy && <button onClick={() => setView({ name: 'newCPN', data: { pregnancyId: currentPregnancy.id, patientId } })} style={{ ...primaryButtonStyle, marginTop: 20, maxWidth: 280 }}>➕ Saisir première CPN</button>}
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {consultations.map(c => (
-                  <div key={c.id} style={cardStyle}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <div>
-                        <div style={{ fontSize: 16, fontWeight: 700 }}>CPN du {new Date(c.consultation_date).toLocaleDateString('fr-FR')}</div>
-                        <div style={{ fontSize: 11, color: '#8B6F5C', marginTop: 2 }}>S{c.gestational_age_weeks || '—'} · {c.performed_by_profile ? `${c.performed_by_profile.first_name} ${c.performed_by_profile.last_name}` : '—'}</div>
-                      </div>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
-                      <VitalCard label="Poids" value={c.weight_kg} unit="kg"/>
-                      <VitalCard label="TA" value={c.blood_pressure_systolic && c.blood_pressure_diastolic ? `${c.blood_pressure_systolic}/${c.blood_pressure_diastolic}` : null} unit=""/>
-                      <VitalCard label="HU" value={c.uterine_height_cm} unit="cm"/>
-                      <VitalCard label="BCF" value={c.fetal_heart_rate} unit="bpm"/>
-                    </div>
-                    {c.observations && (
-                      <div style={{ marginTop: 12, padding: 12, background: '#F5F1EB', borderRadius: 10, fontSize: 13, color: '#5D4037', whiteSpace: 'pre-wrap' }}>{c.observations}</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+        {tab === 'cpn' && (<div>{consultations.length === 0 ? (<div style={{ ...cardStyle, textAlign: 'center', padding: 40 }}><div style={{ fontSize: 50, marginBottom: 12 }}>🩺</div><div style={{ fontSize: 14, fontWeight: 600 }}>Aucune CPN enregistrée</div>{currentPregnancy && <button onClick={() => setView({ name: 'newCPN', data: { pregnancyId: currentPregnancy.id, patientId } })} style={{ ...primaryButtonStyle, marginTop: 20, maxWidth: 280 }}>➕ Saisir première CPN</button>}</div>) : (<div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>{consultations.map(c => (<div key={c.id} style={cardStyle}><div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}><div><div style={{ fontSize: 16, fontWeight: 700 }}>CPN du {new Date(c.consultation_date).toLocaleDateString('fr-FR')}</div><div style={{ fontSize: 11, color: '#8B6F5C', marginTop: 2 }}>S{c.gestational_age_weeks || '—'} · {c.performed_by_profile ? `${c.performed_by_profile.first_name} ${c.performed_by_profile.last_name}` : '—'}</div></div></div><div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}><VitalCard label="Poids" value={c.weight_kg} unit="kg"/><VitalCard label="TA" value={c.blood_pressure_systolic && c.blood_pressure_diastolic ? `${c.blood_pressure_systolic}/${c.blood_pressure_diastolic}` : null} unit=""/><VitalCard label="HU" value={c.uterine_height_cm} unit="cm"/><VitalCard label="BCF" value={c.fetal_heart_rate} unit="bpm"/></div>{c.observations && (<div style={{ marginTop: 12, padding: 12, background: '#F5F1EB', borderRadius: 10, fontSize: 13, color: '#5D4037', whiteSpace: 'pre-wrap' }}>{c.observations}</div>)}</div>))}</div>)}</div>)}
 
-        {/* TAB EXAMENS */}
-        {tab === 'exams' && (
-          <ExamsTab pregnancyId={currentPregnancy?.id} patientId={patientId} exams={exams} profile={profile} onChange={loadPatient}/>
-        )}
-
-        {/* TAB MÉDICAMENTS */}
-        {tab === 'meds' && (
-          <ProMedicationsTab 
-            patientId={patient.id} 
-            pregnancyId={currentPregnancy?.id} 
-            profile={profile} 
-            onChange={loadPatient}
-          />
-        )}
-
-        {/* TAB HISTORIQUE - GROSSESSES */}
-        {tab === 'history' && (
-          <div>
-            {pastPregnancies.length === 0 ? (
-              <div style={{ ...cardStyle, textAlign: 'center', padding: 40, color: '#8B6F5C' }}>Aucune grossesse antérieure</div>
-            ) : pastPregnancies.map(p => (
-              <div key={p.id} style={{ ...cardStyle, marginBottom: 12 }}>
-                <div style={{ fontSize: 14, fontWeight: 700 }}>Grossesse {new Date(p.last_period_date).getFullYear()}</div>
-                <div style={{ fontSize: 12, color: '#8B6F5C' }}>Statut: {p.status}</div>
-              </div>
-            ))}
-          </div>
-        )}
+        {tab === 'exams' && <ExamsTab pregnancyId={currentPregnancy?.id} patientId={patientId} exams={exams} profile={profile} onChange={loadPatient}/>}
+        {tab === 'meds' && <ProMedicationsTab patientId={patient.id} pregnancyId={currentPregnancy?.id} profile={profile} onChange={loadPatient}/>}
+        {tab === 'history' && (<div>{pastPregnancies.length === 0 ? (<div style={{ ...cardStyle, textAlign: 'center', padding: 40, color: '#8B6F5C' }}>Aucune grossesse antérieure</div>) : pastPregnancies.map(p => (<div key={p.id} style={{ ...cardStyle, marginBottom: 12 }}><div style={{ fontSize: 14, fontWeight: 700 }}>Grossesse {new Date(p.last_period_date).getFullYear()}</div><div style={{ fontSize: 12, color: '#8B6F5C' }}>Statut: {p.status}</div></div>))}</div>)}
       </main>
     </div>
   )
 }
 
-function InfoItem({ label, value }) {
-  return (
-    <div style={{ padding: 10, background: '#F5F1EB', borderRadius: 10 }}>
-      <div style={{ fontSize: 10, color: '#8B6F5C', fontWeight: 700, textTransform: 'uppercase' }}>{label}</div>
-      <div style={{ fontSize: 14, fontWeight: 700, color: '#2a1810', marginTop: 2 }}>{value}</div>
-    </div>
-  )
-}
-
-function VitalCard({ label, value, unit }) {
-  return (
-    <div style={{ background: '#F5F1EB', borderRadius: 10, padding: 10, textAlign: 'center' }}>
-      <div style={{ fontSize: 10, color: '#8B6F5C', fontWeight: 700, textTransform: 'uppercase' }}>{label}</div>
-      <div style={{ fontSize: 16, fontFamily: 'Georgia, serif', fontWeight: 700, marginTop: 4 }}>{value || '—'} <span style={{ fontSize: 10, color: '#8B6F5C', fontWeight: 400 }}>{unit}</span></div>
-    </div>
-  )
-}
-
-function Badge({ text, color }) {
-  return (
-    <span style={{ display: 'inline-block', padding: '4px 10px', background: `${color}20`, color, borderRadius: 6, fontSize: 11, fontWeight: 700, marginRight: 4 }}>{text}</span>
-  )
-}
+function InfoItem({ label, value }) { return (<div style={{ padding: 10, background: '#F5F1EB', borderRadius: 10 }}><div style={{ fontSize: 10, color: '#8B6F5C', fontWeight: 700, textTransform: 'uppercase' }}>{label}</div><div style={{ fontSize: 14, fontWeight: 700, color: '#2a1810', marginTop: 2 }}>{value}</div></div>) }
+function VitalCard({ label, value, unit }) { return (<div style={{ background: '#F5F1EB', borderRadius: 10, padding: 10, textAlign: 'center' }}><div style={{ fontSize: 10, color: '#8B6F5C', fontWeight: 700, textTransform: 'uppercase' }}>{label}</div><div style={{ fontSize: 16, fontFamily: 'Georgia, serif', fontWeight: 700, marginTop: 4 }}>{value || '—'} <span style={{ fontSize: 10, color: '#8B6F5C', fontWeight: 400 }}>{unit}</span></div></div>) }
+function Badge({ text, color }) { return (<span style={{ display: 'inline-block', padding: '4px 10px', background: `${color}20`, color, borderRadius: 6, fontSize: 11, fontWeight: 700, marginRight: 4 }}>{text}</span>) }
 
 // =====================================================
-// EXAMS TAB - Onglet examens du dossier patiente
+// EXAMS TAB — FIX: custom exams + is_abnormal
 // =====================================================
 function ExamsTab({ pregnancyId, patientId, exams, profile, onChange }) {
   const [updatingExam, setUpdatingExam] = useState(null)
   const [showResultModal, setShowResultModal] = useState(null)
+  const [showCustomPrescribe, setShowCustomPrescribe] = useState(false)
 
   async function prescribeExam(exam) {
     setUpdatingExam(exam.exam_code)
     try {
-      const { error } = await supabase.from('exam_results').upsert({
-        pregnancy_id: pregnancyId, exam_code: exam.exam_code,
-        status: 'prescrit', prescribed_at: new Date().toISOString(),
-        prescribed_by: profile.id
-      }, { onConflict: 'pregnancy_id,exam_code' })
+      const { error } = await supabase.from('exam_results').upsert({ pregnancy_id: pregnancyId, exam_code: exam.exam_code, status: 'prescrit', prescribed_at: new Date().toISOString(), prescribed_by: profile.id }, { onConflict: 'pregnancy_id,exam_code' })
       if (error) throw error
-      await sendNotification(patientId, 'exam_prescribed',
-        '📋 Examen prescrit',
-        `${exam.exam_name_fr} vous a été prescrit par ${profile.first_name} ${profile.last_name}.`,
-        { exam_code: exam.exam_code },
-        profile.id
-      )
+      await sendNotification(patientId, 'exam_prescribed', '📋 Examen prescrit', `${exam.exam_name_fr || exam.exam_name_custom || exam.exam_code} vous a été prescrit par ${profile.first_name} ${profile.last_name}.`, { exam_code: exam.exam_code }, profile.id)
       onChange()
     } catch (err) { alert('Erreur: ' + err.message) } finally { setUpdatingExam(null) }
   }
 
-  if (!pregnancyId) {
-    return <div style={{ ...cardStyle, textAlign: 'center', padding: 40 }}>Aucune grossesse en cours</div>
-  }
+  if (!pregnancyId) return <div style={{ ...cardStyle, textAlign: 'center', padding: 40 }}>Aucune grossesse en cours</div>
 
   const lateExams = exams.filter(e => e.is_late)
   const todoExams = exams.filter(e => e.current_status === 'a_faire' && !e.is_late)
@@ -1276,83 +817,62 @@ function ExamsTab({ pregnancyId, patientId, exams, profile, onChange }) {
 
   return (
     <div>
-      {lateExams.length > 0 && (
-        <div style={{ marginBottom: 16, padding: 16, background: 'linear-gradient(135deg, #FFE8E2 0%, #FFFFFF 100%)', border: '2px solid #C44536', borderRadius: 14 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ fontSize: 32 }}>⚠️</div>
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: '#8B2E26' }}>{lateExams.length} examen{lateExams.length > 1 ? 's' : ''} en retard !</div>
-              <div style={{ fontSize: 12, color: '#5D4037', marginTop: 2 }}>Examens recommandés mais non encore prescrits.</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
-        {lateExams.length > 0 && (
-          <ExamSection title="🚨 En retard" exams={lateExams} color="#C44536" onPrescribe={prescribeExam} onSeeResult={setShowResultModal} updatingExam={updatingExam}/>
-        )}
-        {abnormalExams.length > 0 && (
-          <ExamSection title="⚠️ Résultats anormaux" exams={abnormalExams} color="#C44536" onPrescribe={prescribeExam} onSeeResult={setShowResultModal} updatingExam={updatingExam}/>
-        )}
-        {todoExams.length > 0 && (
-          <ExamSection title="📋 À prescrire" exams={todoExams} color="#D4A574" onPrescribe={prescribeExam} onSeeResult={setShowResultModal} updatingExam={updatingExam}/>
-        )}
-        {prescribedExams.length > 0 && (
-          <ExamSection title="✓ Prescrits" exams={prescribedExams} color="#8B6F5C" onPrescribe={prescribeExam} onSeeResult={setShowResultModal} updatingExam={updatingExam}/>
-        )}
-        {doneExams.length > 0 && (
-          <ExamSection title="✓✓ Réalisés" exams={doneExams} color="#1F4341" onPrescribe={prescribeExam} onSeeResult={setShowResultModal} updatingExam={updatingExam}/>
-        )}
+      <div style={{ marginBottom: 16 }}>
+        <button onClick={() => setShowCustomPrescribe(true)} style={{ padding: '12px 20px', background: 'linear-gradient(135deg, #2D5F5D 0%, #1F4341 100%)', color: '#FAF6F0', borderRadius: 14, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>➕ Prescrire un examen libre</button>
       </div>
-
-      {exams.length === 0 && (
-        <div style={{ ...cardStyle, textAlign: 'center', padding: 40 }}>
-          <div style={{ fontSize: 50, marginBottom: 12 }}>📋</div>
-          <div style={{ fontSize: 14, color: '#5D4037' }}>Aucun examen requis à ce stade.</div>
-        </div>
-      )}
-
-      {showResultModal && (
-        <ExamResultModal exam={showResultModal} pregnancyId={pregnancyId} patientId={patientId} profile={profile} onClose={() => setShowResultModal(null)} onSaved={() => { setShowResultModal(null); onChange() }}/>
-      )}
+      {lateExams.length > 0 && (<div style={{ marginBottom: 16, padding: 16, background: 'linear-gradient(135deg, #FFE8E2 0%, #FFFFFF 100%)', border: '2px solid #C44536', borderRadius: 14 }}><div style={{ display: 'flex', alignItems: 'center', gap: 12 }}><div style={{ fontSize: 32 }}>⚠️</div><div><div style={{ fontSize: 16, fontWeight: 700, color: '#8B2E26' }}>{lateExams.length} examen{lateExams.length > 1 ? 's' : ''} en retard !</div><div style={{ fontSize: 12, color: '#5D4037', marginTop: 2 }}>Examens recommandés mais non encore prescrits.</div></div></div></div>)}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
+        {lateExams.length > 0 && <ExamSection title="🚨 En retard" exams={lateExams} color="#C44536" onPrescribe={prescribeExam} onSeeResult={setShowResultModal} updatingExam={updatingExam}/>}
+        {abnormalExams.length > 0 && <ExamSection title="⚠️ Résultats anormaux" exams={abnormalExams} color="#C44536" onPrescribe={prescribeExam} onSeeResult={setShowResultModal} updatingExam={updatingExam}/>}
+        {todoExams.length > 0 && <ExamSection title="📋 À prescrire" exams={todoExams} color="#D4A574" onPrescribe={prescribeExam} onSeeResult={setShowResultModal} updatingExam={updatingExam}/>}
+        {prescribedExams.length > 0 && <ExamSection title="✓ Prescrits" exams={prescribedExams} color="#8B6F5C" onPrescribe={prescribeExam} onSeeResult={setShowResultModal} updatingExam={updatingExam}/>}
+        {doneExams.length > 0 && <ExamSection title="✓✓ Réalisés" exams={doneExams} color="#1F4341" onPrescribe={prescribeExam} onSeeResult={setShowResultModal} updatingExam={updatingExam}/>}
+      </div>
+      {exams.length === 0 && !showCustomPrescribe && (<div style={{ ...cardStyle, textAlign: 'center', padding: 40 }}><div style={{ fontSize: 50, marginBottom: 12 }}>📋</div><div style={{ fontSize: 14, color: '#5D4037' }}>Aucun examen requis à ce stade.</div><button onClick={() => setShowCustomPrescribe(true)} style={{ marginTop: 16, padding: '10px 20px', background: '#2D5F5D', color: '#FAF6F0', borderRadius: 10, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12 }}>➕ Prescrire un examen libre</button></div>)}
+      {showResultModal && <ExamResultModal exam={showResultModal} pregnancyId={pregnancyId} patientId={patientId} profile={profile} onClose={() => setShowResultModal(null)} onSaved={() => { setShowResultModal(null); onChange() }}/>}
+      {showCustomPrescribe && <CustomExamModal pregnancyId={pregnancyId} patientId={patientId} profile={profile} onClose={() => setShowCustomPrescribe(false)} onSaved={() => { setShowCustomPrescribe(false); onChange() }}/>}
     </div>
   )
 }
 
+// FIX: ExamSection avec support exam_name_custom
 function ExamSection({ title, exams, color, onPrescribe, onSeeResult, updatingExam }) {
   return (
     <div style={cardStyle}>
       <div style={{ fontSize: 13, fontWeight: 700, color, marginBottom: 12, paddingBottom: 8, borderBottom: `2px solid ${color}30` }}>{title} ({exams.length})</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {exams.map(e => (
-          <div key={e.exam_code} style={{ padding: 12, background: '#FAF6F0', borderRadius: 10, border: '1px solid rgba(42,24,16,0.04)' }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#2a1810' }}>{e.exam_name_fr}</div>
-            <div style={{ fontSize: 11, color: '#8B6F5C', marginTop: 2 }}>Recommandé à S{e.recommended_at_week}</div>
-            {e.description && <div style={{ fontSize: 11, color: '#5D4037', marginTop: 4, fontStyle: 'italic' }}>{e.description}</div>}
-            <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
-              {e.current_status === 'a_faire' && (
-                <button onClick={() => onPrescribe(e)} disabled={updatingExam === e.exam_code} style={{ flex: 1, padding: 8, background: '#D4A574', color: '#FAF6F0', borderRadius: 8, fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>{updatingExam === e.exam_code ? '...' : '📋 Prescrire'}</button>
-              )}
-              {e.current_status === 'prescrit' && (
-                <button onClick={() => onSeeResult(e)} style={{ flex: 1, padding: 8, background: '#2D5F5D', color: '#FAF6F0', borderRadius: 8, fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>📝 Saisir résultat</button>
-              )}
-              {['realise', 'resultat_recu', 'anormal'].includes(e.current_status) && (
-                <button onClick={() => onSeeResult(e)} style={{ flex: 1, padding: 8, background: '#FAF6F0', color: '#5D4037', borderRadius: 8, fontSize: 11, fontWeight: 700, border: '1px solid rgba(42,24,16,0.1)', cursor: 'pointer', fontFamily: 'inherit' }}>👁 Voir détails</button>
-              )}
+        {exams.map(e => {
+          const displayName = e.exam_name_fr || e.exam_name_custom || e.exam_code
+          const isCustom = e.exam_code?.startsWith('CUSTOM_')
+          return (
+            <div key={e.exam_code || e.id} style={{ padding: 12, background: '#FAF6F0', borderRadius: 10, border: '1px solid rgba(42,24,16,0.04)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#2a1810', flex: 1 }}>{displayName}</div>
+                {isCustom && <span style={{ padding: '2px 8px', background: '#DDEBE9', color: '#2D5F5D', borderRadius: 6, fontSize: 10, fontWeight: 700 }}>Libre</span>}
+              </div>
+              {e.recommended_at_week && <div style={{ fontSize: 11, color: '#8B6F5C', marginTop: 2 }}>Recommandé à S{e.recommended_at_week}</div>}
+              {e.description && <div style={{ fontSize: 11, color: '#5D4037', marginTop: 4, fontStyle: 'italic' }}>{e.description}</div>}
+              {e.result_notes && !e.result_value && <div style={{ fontSize: 11, color: '#5D4037', marginTop: 4, fontStyle: 'italic' }}>📝 {e.result_notes}</div>}
+              <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+                {e.current_status === 'a_faire' && (<button onClick={() => onPrescribe(e)} disabled={updatingExam === e.exam_code} style={{ flex: 1, padding: 8, background: '#D4A574', color: '#FAF6F0', borderRadius: 8, fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>{updatingExam === e.exam_code ? '...' : '📋 Prescrire'}</button>)}
+                {e.current_status === 'prescrit' && (<button onClick={() => onSeeResult(e)} style={{ flex: 1, padding: 8, background: '#2D5F5D', color: '#FAF6F0', borderRadius: 8, fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>📝 Saisir résultat</button>)}
+                {['realise', 'resultat_recu', 'anormal'].includes(e.current_status) && (<button onClick={() => onSeeResult(e)} style={{ flex: 1, padding: 8, background: '#FAF6F0', color: '#5D4037', borderRadius: 8, fontSize: 11, fontWeight: 700, border: '1px solid rgba(42,24,16,0.1)', cursor: 'pointer', fontFamily: 'inherit' }}>👁 Voir détails</button>)}
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
 }
 
+// FIX: ExamResultModal avec is_abnormal + displayName
 function ExamResultModal({ exam, pregnancyId, patientId, profile, onClose, onSaved }) {
   const [resultValue, setResultValue] = useState('')
   const [isAbnormal, setIsAbnormal] = useState(false)
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
+  const examDisplayName = exam.exam_name_fr || exam.exam_name_custom || exam.exam_code
 
   async function save() {
     setLoading(true)
@@ -1365,12 +885,7 @@ function ExamResultModal({ exam, pregnancyId, patientId, profile, onClose, onSav
         recorded_by: profile.id
       }, { onConflict: 'pregnancy_id,exam_code' })
       if (error) throw error
-      await sendNotification(patientId, 'exam_result',
-        isAbnormal ? '⚠️ Résultat d\'examen anormal' : '✅ Résultat d\'examen reçu',
-        `Résultat de "${exam.exam_name_fr}" enregistré par ${profile.first_name} ${profile.last_name}.${isAbnormal ? ' Résultat anormal — consultez votre sage-femme.' : ''}`,
-        { exam_code: exam.exam_code, is_abnormal: isAbnormal },
-        profile.id
-      )
+      await sendNotification(patientId, 'exam_result', isAbnormal ? '⚠️ Résultat d\'examen anormal' : '✅ Résultat d\'examen reçu', `Résultat de "${examDisplayName}" enregistré par ${profile.first_name} ${profile.last_name}.${isAbnormal ? ' Résultat anormal — consultez votre sage-femme.' : ''}`, { exam_code: exam.exam_code, is_abnormal: isAbnormal }, profile.id)
       onSaved()
     } catch (err) { alert('Erreur: ' + err.message); setLoading(false) }
   }
@@ -1379,23 +894,12 @@ function ExamResultModal({ exam, pregnancyId, patientId, profile, onClose, onSav
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 24 }}>
       <div style={{ background: '#FAF6F0', borderRadius: 18, padding: 24, maxWidth: 520, width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-          <div>
-            <div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 700, textTransform: 'uppercase' }}>Saisir résultat</div>
-            <div style={{ fontSize: 20, fontFamily: 'Georgia, serif', fontWeight: 700, marginTop: 4 }}>{exam.exam_name_fr}</div>
-          </div>
+          <div><div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 700, textTransform: 'uppercase' }}>Saisir résultat</div><div style={{ fontSize: 20, fontFamily: 'Georgia, serif', fontWeight: 700, marginTop: 4 }}>{examDisplayName}</div></div>
           <button onClick={onClose} style={{ padding: 8, background: '#F5F1EB', border: 'none', borderRadius: 8, cursor: 'pointer' }}>✕</button>
         </div>
-        <div>
-          <label style={labelStyle}>Résultat</label>
-          <textarea value={resultValue} onChange={(e) => setResultValue(e.target.value)} rows={3} placeholder="Saisir le résultat..." style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}/>
-        </div>
-        <div style={{ marginTop: 14 }}>
-          <CheckboxField label="⚠️ Résultat anormal" checked={isAbnormal} onChange={setIsAbnormal}/>
-        </div>
-        <div style={{ marginTop: 14 }}>
-          <label style={labelStyle}>Notes</label>
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Observations..." style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}/>
-        </div>
+        <div><label style={labelStyle}>Résultat</label><textarea value={resultValue} onChange={(e) => setResultValue(e.target.value)} rows={3} placeholder="Saisir le résultat..." style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}/></div>
+        <div style={{ marginTop: 14 }}><CheckboxField label="⚠️ Résultat anormal" checked={isAbnormal} onChange={setIsAbnormal}/></div>
+        <div style={{ marginTop: 14 }}><label style={labelStyle}>Notes</label><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Observations..." style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}/></div>
         <div style={{ marginTop: 20, display: 'flex', gap: 10 }}>
           <button onClick={onClose} style={{ flex: 1, padding: 12, background: '#F5F1EB', color: '#5D4037', borderRadius: 12, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Annuler</button>
           <button onClick={save} disabled={loading} style={{ flex: 2, ...primaryButtonStyle, opacity: loading ? 0.6 : 1 }}>{loading ? '...' : '💾 Enregistrer'}</button>
@@ -1405,8 +909,45 @@ function ExamResultModal({ exam, pregnancyId, patientId, profile, onClose, onSav
   )
 }
 
+// NOUVEAU: CustomExamModal — prescrire un examen hors catalogue
+function CustomExamModal({ pregnancyId, patientId, profile, onClose, onSaved }) {
+  const [examName, setExamName] = useState('')
+  const [examNotes, setExamNotes] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  async function prescribe() {
+    if (!examName.trim()) return
+    setLoading(true)
+    try {
+      const customCode = 'CUSTOM_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4).toUpperCase()
+      const { error } = await supabase.from('exam_results').insert({ pregnancy_id: pregnancyId, exam_code: customCode, exam_name_custom: examName.trim(), status: 'prescrit', prescribed_at: new Date().toISOString(), prescribed_by: profile.id, result_notes: examNotes || null })
+      if (error) throw error
+      await sendNotification(patientId, 'exam_prescribed', '📋 Examen prescrit', `"${examName.trim()}" vous a été prescrit par ${profile.first_name} ${profile.last_name}.`, { exam_code: customCode, exam_name: examName.trim() }, profile.id)
+      onSaved()
+    } catch (err) { alert('Erreur: ' + err.message); setLoading(false) }
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 24 }}>
+      <div style={{ background: '#FAF6F0', borderRadius: 18, padding: 24, maxWidth: 520, width: '100%' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+          <div><div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 700, textTransform: 'uppercase' }}>Prescription libre</div><div style={{ fontSize: 20, fontFamily: 'Georgia, serif', fontWeight: 700, marginTop: 4 }}>Prescrire un examen</div></div>
+          <button onClick={onClose} style={{ padding: 8, background: '#F5F1EB', border: 'none', borderRadius: 8, cursor: 'pointer' }}>✕</button>
+        </div>
+        <div style={{ fontSize: 12, color: '#5D4037', marginBottom: 16, padding: 10, background: '#DDEBE9', borderRadius: 10 }}>💡 Pour un examen hors catalogue (doppler, bilan hépatique, IRM...)</div>
+        <div><label style={labelStyle}>Nom de l'examen *</label><input type="text" value={examName} onChange={(e) => setExamName(e.target.value)} placeholder="Ex: Doppler ombilical, Bilan hépatique..." style={inputStyle} autoFocus/></div>
+        <div style={{ marginTop: 14 }}><label style={labelStyle}>Instructions (optionnel)</label><textarea value={examNotes} onChange={(e) => setExamNotes(e.target.value)} rows={2} placeholder="Ex: À jeun, résultat urgent..." style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}/></div>
+        <div style={{ marginTop: 20, display: 'flex', gap: 10 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: 12, background: '#F5F1EB', color: '#5D4037', borderRadius: 12, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Annuler</button>
+          <button onClick={prescribe} disabled={loading || !examName.trim()} style={{ flex: 2, ...primaryButtonStyle, opacity: loading || !examName.trim() ? 0.6 : 1 }}>{loading ? '...' : '📋 Prescrire'}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // =====================================================
-// NEW CPN - avec suggestions d'examens
+// NEW CPN — FIX: ajout prochain RDV
 // =====================================================
 function NewCPNView({ profile, pregnancyId, patientId, setView }) {
   const [weight, setWeight] = useState('')
@@ -1417,6 +958,9 @@ function NewCPNView({ profile, pregnancyId, patientId, setView }) {
   const [observations, setObservations] = useState('')
   const [dueExams, setDueExams] = useState([])
   const [selectedExams, setSelectedExams] = useState([])
+  const [nextRdvDate, setNextRdvDate] = useState('')
+  const [nextRdvType, setNextRdvType] = useState('cpn')
+  const [nextRdvNotes, setNextRdvNotes] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [pregnancy, setPregnancy] = useState(null)
@@ -1436,85 +980,44 @@ function NewCPNView({ profile, pregnancyId, patientId, setView }) {
   }, [pregnancyId, patientId])
 
   const weeks = pregnancy ? Math.floor((new Date() - new Date(pregnancy.last_period_date)) / (1000 * 60 * 60 * 24 * 7)) : null
+  const rdvTypeLabels = { cpn: 'Consultation prénatale', echographie: 'Échographie', labo: 'Analyses de laboratoire', specialiste: 'Consultation spécialiste', vaccination: 'Vaccination', suivi_risque: 'Suivi grossesse à risque', autre: 'Rendez-vous médical' }
 
   async function handleSubmit(e) {
-    e.preventDefault()
-    setLoading(true); setError(null)
+    e.preventDefault(); setLoading(true); setError(null)
     try {
-      // 1. Créer la CPN
-      const { error: ce } = await supabase.from('consultations').insert({
-        pregnancy_id: pregnancyId, performed_by: profile.id,
-        consultation_date: new Date().toISOString().split('T')[0],
-        gestational_age_weeks: weeks,
-        weight_kg: parseFloat(weight) || null,
-        blood_pressure_systolic: parseInt(bpSys) || null,
-        blood_pressure_diastolic: parseInt(bpDia) || null,
-        uterine_height_cm: parseFloat(uh) || null,
-        fetal_heart_rate: parseInt(bcf) || null,
-        observations: observations || null
-      })
+      const { error: ce } = await supabase.from('consultations').insert({ pregnancy_id: pregnancyId, performed_by: profile.id, consultation_date: new Date().toISOString().split('T')[0], gestational_age_weeks: weeks, weight_kg: parseFloat(weight) || null, blood_pressure_systolic: parseInt(bpSys) || null, blood_pressure_diastolic: parseInt(bpDia) || null, uterine_height_cm: parseFloat(uh) || null, fetal_heart_rate: parseInt(bcf) || null, observations: observations || null })
       if (ce) throw ce
-
-      // 2. Prescrire les examens sélectionnés
       if (selectedExams.length > 0) {
-        const examRows = selectedExams.map(code => ({
-          pregnancy_id: pregnancyId, exam_code: code,
-          status: 'prescrit', prescribed_at: new Date().toISOString(), prescribed_by: profile.id
-        }))
+        const examRows = selectedExams.map(code => ({ pregnancy_id: pregnancyId, exam_code: code, status: 'prescrit', prescribed_at: new Date().toISOString(), prescribed_by: profile.id }))
         await supabase.from('exam_results').upsert(examRows, { onConflict: 'pregnancy_id,exam_code' })
       }
-
-      // 3. Recalculer le score de risque (en intégrant TA si élevée)
       const newRiskData = extractRiskDataFromPregnancy(pregnancy, patient)
-      // Si TA élevée à cette CPN, on peut booster le score
-      if (parseInt(bpSys) >= 140 || parseInt(bpDia) >= 90) {
-        newRiskData.has_hypertension = true  // Détection HTA gravidique
-      }
+      if (parseInt(bpSys) >= 140 || parseInt(bpDia) >= 90) newRiskData.has_hypertension = true
       const newRisk = calculateRiskScore(newRiskData)
       await supabase.from('pregnancies').update({ current_risk_level: newRisk.level }).eq('id', pregnancyId)
+      await sendNotification(patientId, 'cpn_created', '🩺 Nouvelle consultation enregistrée', `Votre CPN de S${weeks} a été enregistrée par ${profile.first_name} ${profile.last_name}. Poids: ${weight || '—'}kg, TA: ${bpSys || '—'}/${bpDia || '—'}.`, { pregnancy_id: pregnancyId, weeks }, profile.id)
+      if (selectedExams.length > 0) await sendNotification(patientId, 'exam_prescribed', '📋 Examens prescrits', `${selectedExams.length} examen(s) vous ont été prescrits lors de votre CPN.`, { exams: selectedExams }, profile.id)
+      if (newRisk.level !== pregnancy.current_risk_level) await sendNotification(patientId, 'risk_changed', '⚠️ Niveau de risque mis à jour', `Votre niveau de risque a été reclassé à "${newRisk.label}".`, { old_level: pregnancy.current_risk_level, new_level: newRisk.level }, profile.id)
 
-      // 4. Notifications à la patiente
-      await sendNotification(patientId, 'cpn_created',
-        '🩺 Nouvelle consultation enregistrée',
-        `Votre CPN de S${weeks} a été enregistrée par ${profile.first_name} ${profile.last_name}. Poids: ${weight || '—'}kg, TA: ${bpSys || '—'}/${bpDia || '—'}.`,
-        { pregnancy_id: pregnancyId, weeks },
-        profile.id
-      )
-
-      if (selectedExams.length > 0) {
-        await sendNotification(patientId, 'exam_prescribed',
-          '📋 Examens prescrits',
-          `${selectedExams.length} examen(s) vous ont été prescrits lors de votre CPN. Consultez l'onglet Examens.`,
-          { exams: selectedExams },
-          profile.id
-        )
-      }
-
-      if (newRisk.level !== pregnancy.current_risk_level) {
-        await sendNotification(patientId, 'risk_changed',
-          '⚠️ Niveau de risque mis à jour',
-          `Votre niveau de risque a été reclassé à "${newRisk.label}" suite à votre dernière consultation.`,
-          { old_level: pregnancy.current_risk_level, new_level: newRisk.level },
-          profile.id
-        )
+      // NOUVEAU: Créer le prochain RDV
+      if (nextRdvDate) {
+        const { error: rdvError } = await supabase.from('appointments').insert({ pregnancy_id: pregnancyId, woman_id: patientId, appointment_date: nextRdvDate, type: nextRdvType, notes: nextRdvNotes || null, created_by: profile.id, status: 'planifie' })
+        if (rdvError) console.error('Erreur création RDV:', rdvError)
+        const dateFormatted = new Date(nextRdvDate).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+        await sendNotification(patientId, 'appointment_reminder', `📅 Prochain RDV : ${rdvTypeLabels[nextRdvType] || 'RDV'}`, `Votre prochain rendez-vous est fixé le ${dateFormatted}.${nextRdvNotes ? ' Note : ' + nextRdvNotes : ''} — ${profile.first_name} ${profile.last_name}`, { appointment_date: nextRdvDate, type: nextRdvType }, profile.id)
       }
 
       setView({ name: 'patient', data: patientId })
     } catch (err) { setError(err.message); setLoading(false) }
   }
 
-  function toggleExam(code) {
-    setSelectedExams(s => s.includes(code) ? s.filter(c => c !== code) : [...s, code])
-  }
+  function toggleExam(code) { setSelectedExams(s => s.includes(code) ? s.filter(c => c !== code) : [...s, code]) }
 
   return (
     <div style={pageStyle}>
       <header style={headerStyle}>
         <button onClick={() => setView({ name: 'patient', data: patientId })} style={backButtonStyle}>← Retour</button>
-        <div style={{ flex: 1, marginLeft: 16 }}>
-          <div style={{ fontSize: 20, fontWeight: 700, fontFamily: 'Georgia, serif' }}>➕ Nouvelle CPN</div>
-          <div style={{ fontSize: 11, color: '#8B6F5C', marginTop: 2 }}>{patient?.first_name} {patient?.last_name} · S{weeks || '—'}</div>
-        </div>
+        <div style={{ flex: 1, marginLeft: 16 }}><div style={{ fontSize: 20, fontWeight: 700, fontFamily: 'Georgia, serif' }}>➕ Nouvelle CPN</div><div style={{ fontSize: 11, color: '#8B6F5C', marginTop: 2 }}>{patient?.first_name} {patient?.last_name} · S{weeks || '—'}</div></div>
       </header>
       <main style={{ padding: '24px 32px', maxWidth: 1100, margin: '0 auto' }}>
         <form onSubmit={handleSubmit}>
@@ -1525,45 +1028,36 @@ function NewCPNView({ profile, pregnancyId, patientId, setView }) {
               <div><label style={labelStyle}>TA Diastolique</label><input type="number" value={bpDia} onChange={(e) => setBpDia(e.target.value)} placeholder="80" style={inputStyle}/></div>
               <div><label style={labelStyle}>HU (cm)</label><input type="number" step="0.1" value={uh} onChange={(e) => setUh(e.target.value)} style={inputStyle}/></div>
             </div>
-            <div style={{ marginTop: 14 }}>
-              <label style={labelStyle}>BCF (bpm)</label><input type="number" value={bcf} onChange={(e) => setBcf(e.target.value)} placeholder="140" style={inputStyle}/>
-            </div>
-            {(parseInt(bpSys) >= 140 || parseInt(bpDia) >= 90) && (
-              <div style={{ marginTop: 10, padding: 10, background: '#FFE8E2', border: '1px solid #C44536', borderRadius: 10, fontSize: 12, color: '#8B2E26' }}>
-                ⚠️ <strong>Tension élevée détectée</strong> · Risque pré-éclampsie. Le score IA sera reclassé.
-              </div>
-            )}
+            <div style={{ marginTop: 14 }}><label style={labelStyle}>BCF (bpm)</label><input type="number" value={bcf} onChange={(e) => setBcf(e.target.value)} placeholder="140" style={inputStyle}/></div>
+            {(parseInt(bpSys) >= 140 || parseInt(bpDia) >= 90) && (<div style={{ marginTop: 10, padding: 10, background: '#FFE8E2', border: '1px solid #C44536', borderRadius: 10, fontSize: 12, color: '#8B2E26' }}>⚠️ <strong>Tension élevée détectée</strong> · Risque pré-éclampsie. Le score IA sera reclassé.</div>)}
           </FormSection>
 
-          {/* SUGGESTIONS IA D'EXAMENS */}
           {dueExams.length > 0 && (
             <FormSection number="2" title="🤖 Examens à prescrire (suggérés par l'IA)">
               <div style={{ fontSize: 12, color: '#5D4037', marginBottom: 12 }}>L'IA suggère ces examens en fonction de la SA. Cochez ceux à prescrire :</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {dueExams.map(e => (
-                  <label key={e.exam_code} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, background: e.is_late ? '#FFE8E2' : '#F5F1EB', borderRadius: 10, cursor: 'pointer', border: e.is_late ? '1px solid #C44536' : '1px solid transparent' }}>
-                    <input type="checkbox" checked={selectedExams.includes(e.exam_code)} onChange={() => toggleExam(e.exam_code)} style={{ accentColor: '#C44536' }}/>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 600 }}>{e.is_late && '⚠️ '}{e.exam_name_fr}</div>
-                      <div style={{ fontSize: 11, color: '#8B6F5C', marginTop: 2 }}>Recommandé à S{e.recommended_at_week}{e.is_late && ` · En retard !`}</div>
-                    </div>
-                  </label>
-                ))}
+                {dueExams.map(e => (<label key={e.exam_code} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, background: e.is_late ? '#FFE8E2' : '#F5F1EB', borderRadius: 10, cursor: 'pointer', border: e.is_late ? '1px solid #C44536' : '1px solid transparent' }}><input type="checkbox" checked={selectedExams.includes(e.exam_code)} onChange={() => toggleExam(e.exam_code)} style={{ accentColor: '#C44536' }}/><div style={{ flex: 1 }}><div style={{ fontSize: 14, fontWeight: 600 }}>{e.is_late && '⚠️ '}{e.exam_name_fr}</div><div style={{ fontSize: 11, color: '#8B6F5C', marginTop: 2 }}>Recommandé à S{e.recommended_at_week}{e.is_late && ` · En retard !`}</div></div></label>))}
               </div>
-              {selectedExams.length > 0 && (
-                <div style={{ marginTop: 12, padding: 10, background: '#DDEBE9', borderRadius: 10, fontSize: 12, color: '#1F4341' }}>
-                  ✓ <strong>{selectedExams.length}</strong> examen{selectedExams.length > 1 ? 's' : ''} sera{selectedExams.length > 1 ? 'nt' : ''} prescrit{selectedExams.length > 1 ? 's' : ''} automatiquement.
-                </div>
-              )}
+              {selectedExams.length > 0 && (<div style={{ marginTop: 12, padding: 10, background: '#DDEBE9', borderRadius: 10, fontSize: 12, color: '#1F4341' }}>✓ <strong>{selectedExams.length}</strong> examen{selectedExams.length > 1 ? 's' : ''} sera{selectedExams.length > 1 ? 'nt' : ''} prescrit{selectedExams.length > 1 ? 's' : ''} automatiquement.</div>)}
             </FormSection>
           )}
 
-          <FormSection number="3" title="Observations cliniques">
+          {/* NOUVEAU: Prochain RDV */}
+          <FormSection number="3" title="📅 Prochain rendez-vous">
+            <div style={{ fontSize: 12, color: '#5D4037', marginBottom: 12 }}>Fixez la date du prochain RDV. La patiente recevra des rappels automatiques.</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div><label style={labelStyle}>Date du prochain RDV</label><input type="date" value={nextRdvDate} onChange={(e) => setNextRdvDate(e.target.value)} min={new Date().toISOString().split('T')[0]} style={inputStyle}/></div>
+              <div><label style={labelStyle}>Type de RDV</label><select value={nextRdvType} onChange={(e) => setNextRdvType(e.target.value)} style={inputStyle}><option value="cpn">CPN</option><option value="echographie">Échographie</option><option value="labo">Analyses labo</option><option value="specialiste">Spécialiste</option><option value="vaccination">Vaccination</option><option value="suivi_risque">Suivi risque</option><option value="autre">Autre</option></select></div>
+            </div>
+            <div style={{ marginTop: 14 }}><label style={labelStyle}>Notes (optionnel)</label><input type="text" value={nextRdvNotes} onChange={(e) => setNextRdvNotes(e.target.value)} placeholder="Ex: Venir à jeun, apporter résultats labo..." style={inputStyle}/></div>
+            {nextRdvDate && (<div style={{ marginTop: 10, padding: 12, background: '#DDEBE9', borderRadius: 10, fontSize: 12, color: '#1F4341' }}>✓ RDV <strong>{rdvTypeLabels[nextRdvType]}</strong> le <strong>{new Date(nextRdvDate).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</strong>{nextRdvNotes && <span> — {nextRdvNotes}</span>}<div style={{ marginTop: 6, fontSize: 11, color: '#5D4037' }}>📩 Rappels automatiques : J-3, J-1 et le jour J</div></div>)}
+          </FormSection>
+
+          <FormSection number="4" title="Observations cliniques">
             <textarea value={observations} onChange={(e) => setObservations(e.target.value)} rows={4} placeholder="Notes de la consultation..." style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}/>
           </FormSection>
 
           {error && <div style={{ marginTop: 16, padding: 14, background: '#FFE8E2', borderRadius: 12, color: '#8B2E26' }}>⚠️ {error}</div>}
-
           <div style={{ marginTop: 20, display: 'flex', gap: 10, marginBottom: 32 }}>
             <button type="button" onClick={() => setView({ name: 'patient', data: patientId })} style={{ flex: 1, padding: 14, background: '#F5F1EB', color: '#5D4037', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Annuler</button>
             <button type="submit" disabled={loading} style={{ flex: 2, ...primaryButtonStyle, opacity: loading ? 0.6 : 1 }}>{loading ? '...' : '✓ Enregistrer la CPN'}</button>
@@ -1575,97 +1069,45 @@ function NewCPNView({ profile, pregnancyId, patientId, setView }) {
 }
 
 // =====================================================
-// NEW PREGNANCY (simplifié)
+// NEW PREGNANCY
 // =====================================================
 function NewPregnancyView({ profile, patientId, setView }) {
-  const [lastPeriod, setLastPeriod] = useState('')
-  const [gravidity, setGravidity] = useState('1')
-  const [parity, setParity] = useState('0')
-  const [loading, setLoading] = useState(false)
-
+  const [lastPeriod, setLastPeriod] = useState(''); const [gravidity, setGravidity] = useState('1'); const [parity, setParity] = useState('0'); const [loading, setLoading] = useState(false)
   async function handleSubmit(e) {
-    e.preventDefault()
-    setLoading(true)
-    const ddr = new Date(lastPeriod)
-    const term = new Date(ddr); term.setDate(term.getDate() + 280)
-    await supabase.from('pregnancies').insert({
-      woman_id: patientId, status: 'en_cours',
-      last_period_date: lastPeriod, expected_delivery_date: term.toISOString().split('T')[0],
-      gravidity: parseInt(gravidity), parity: parseInt(parity),
-      current_risk_level: 'faible', created_by: profile.id
-    })
+    e.preventDefault(); setLoading(true)
+    const ddr = new Date(lastPeriod); const term = new Date(ddr); term.setDate(term.getDate() + 280)
+    await supabase.from('pregnancies').insert({ woman_id: patientId, status: 'en_cours', last_period_date: lastPeriod, expected_delivery_date: term.toISOString().split('T')[0], gravidity: parseInt(gravidity), parity: parseInt(parity), current_risk_level: 'faible', created_by: profile.id })
     setView({ name: 'patient', data: patientId })
   }
-
   return (
-    <div style={pageStyle}>
-      <header style={headerStyle}>
-        <button onClick={() => setView({ name: 'patient', data: patientId })} style={backButtonStyle}>← Retour</button>
-        <div style={{ flex: 1, marginLeft: 16, fontSize: 20, fontWeight: 700, fontFamily: 'Georgia, serif' }}>+ Démarrer grossesse</div>
-      </header>
-      <main style={{ padding: '24px 32px', maxWidth: 720, margin: '0 auto' }}>
-        <form onSubmit={handleSubmit}>
-          <FormSection number="1" title="Informations grossesse">
-            <div><label style={labelStyle}>DDR *</label><input type="date" value={lastPeriod} onChange={(e) => setLastPeriod(e.target.value)} required style={inputStyle}/></div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 14 }}>
-              <div><label style={labelStyle}>Gestité</label><input type="number" min="1" value={gravidity} onChange={(e) => setGravidity(e.target.value)} style={inputStyle}/></div>
-              <div><label style={labelStyle}>Parité</label><input type="number" min="0" value={parity} onChange={(e) => setParity(e.target.value)} style={inputStyle}/></div>
-            </div>
-          </FormSection>
-          <div style={{ marginTop: 12, padding: 14, background: '#FFF6E8', borderRadius: 12, fontSize: 12, color: '#5D4037' }}>
-            💡 Pour saisir les antécédents complets et obtenir le score IA, utilisez plutôt <strong>"Modifier"</strong> depuis le dossier.
-          </div>
-          <button type="submit" disabled={loading} style={{ ...primaryButtonStyle, marginTop: 20 }}>{loading ? '...' : '✓ Créer la grossesse'}</button>
-        </form>
-      </main>
-    </div>
+    <div style={pageStyle}><header style={headerStyle}><button onClick={() => setView({ name: 'patient', data: patientId })} style={backButtonStyle}>← Retour</button><div style={{ flex: 1, marginLeft: 16, fontSize: 20, fontWeight: 700, fontFamily: 'Georgia, serif' }}>+ Démarrer grossesse</div></header>
+      <main style={{ padding: '24px 32px', maxWidth: 720, margin: '0 auto' }}><form onSubmit={handleSubmit}><FormSection number="1" title="Informations grossesse"><div><label style={labelStyle}>DDR *</label><input type="date" value={lastPeriod} onChange={(e) => setLastPeriod(e.target.value)} required style={inputStyle}/></div><div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 14 }}><div><label style={labelStyle}>Gestité</label><input type="number" min="1" value={gravidity} onChange={(e) => setGravidity(e.target.value)} style={inputStyle}/></div><div><label style={labelStyle}>Parité</label><input type="number" min="0" value={parity} onChange={(e) => setParity(e.target.value)} style={inputStyle}/></div></div></FormSection><div style={{ marginTop: 12, padding: 14, background: '#FFF6E8', borderRadius: 12, fontSize: 12, color: '#5D4037' }}>💡 Pour saisir les antécédents complets et obtenir le score IA, utilisez "Modifier" depuis le dossier.</div><button type="submit" disabled={loading} style={{ ...primaryButtonStyle, marginTop: 20 }}>{loading ? '...' : '✓ Créer la grossesse'}</button></form></main></div>
   )
 }
 
 // =====================================================
-// ALERT DETAIL
+// ALERT DETAIL — FIX: blood_type depuis pregnancy
 // =====================================================
 function AlertDetailView({ profile, alertId, setView, openPatientDossier }) {
-  const [alert, setAlert] = useState(null)
-  const [woman, setWoman] = useState(null)
-  const [pregnancy, setPregnancy] = useState(null)
-  const [loading, setLoading] = useState(true)
-
+  const [alert, setAlert] = useState(null); const [woman, setWoman] = useState(null); const [pregnancy, setPregnancy] = useState(null); const [loading, setLoading] = useState(true)
   useEffect(() => {
     async function load() {
-      const { data: a } = await supabase.from('alerts').select('*').eq('id', alertId).single()
-      setAlert(a)
+      const { data: a } = await supabase.from('alerts').select('*').eq('id', alertId).single(); setAlert(a)
       if (a?.woman_id) {
-        const { data: w } = await supabase.from('profiles').select('*').eq('id', a.woman_id).single()
-        setWoman(w)
-        const { data: p } = await supabase.from('pregnancies').select('*').eq('woman_id', a.woman_id).eq('status', 'en_cours').maybeSingle()
-        setPregnancy(p)
+        const { data: w } = await supabase.from('profiles').select('*').eq('id', a.woman_id).single(); setWoman(w)
+        const { data: p } = await supabase.from('pregnancies').select('*').eq('woman_id', a.woman_id).eq('status', 'en_cours').maybeSingle(); setPregnancy(p)
       }
       setLoading(false)
     }
     load()
   }, [alertId])
 
-  async function takeCharge() {
-    await supabase.from('alerts').update({ status: 'prise_en_charge', taken_by: profile.id, taken_at: new Date().toISOString() }).eq('id', alertId)
-    setAlert(prev => ({ ...prev, status: 'prise_en_charge', taken_by: profile.id }))
-  }
-
-  async function resolveAlert() {
-    const notes = prompt('Notes de résolution (optionnel) :')
-    await supabase.from('alerts').update({ status: 'resolue', resolved_at: new Date().toISOString(), resolution_notes: notes || null }).eq('id', alertId)
-    setView({ name: 'home' })
-  }
+  async function takeCharge() { await supabase.from('alerts').update({ status: 'prise_en_charge', taken_by: profile.id, taken_at: new Date().toISOString() }).eq('id', alertId); setAlert(prev => ({ ...prev, status: 'prise_en_charge', taken_by: profile.id })) }
+  async function resolveAlert() { const notes = prompt('Notes de résolution (optionnel) :'); await supabase.from('alerts').update({ status: 'resolue', resolved_at: new Date().toISOString(), resolution_notes: notes || null }).eq('id', alertId); setView({ name: 'home' }) }
 
   if (loading) return <LoadingScreen/>
   if (!alert) return <div>Alerte introuvable</div>
-
-  const triageLevels = {
-    critical: { label: '🚨 URGENCE VITALE', color: '#DC2626', bg: '#FEE2E2' },
-    urgent: { label: '🏥 URGENCE', color: '#EA580C', bg: '#FFF7ED' },
-    moderate: { label: '📞 MODÉRÉ', color: '#CA8A04', bg: '#FEFCE8' },
-    low: { label: '💚 CONSEIL', color: '#16A34A', bg: '#F0FDF4' }
-  }
+  const triageLevels = { critical: { label: '🚨 URGENCE VITALE', color: '#DC2626', bg: '#FEE2E2' }, urgent: { label: '🏥 URGENCE', color: '#EA580C', bg: '#FFF7ED' }, moderate: { label: '📞 MODÉRÉ', color: '#CA8A04', bg: '#FEFCE8' }, low: { label: '💚 CONSEIL', color: '#16A34A', bg: '#F0FDF4' } }
   const tl = alert.triage_level ? triageLevels[alert.triage_level] : null
   const weeksPregnant = pregnancy?.last_period_date ? Math.floor((new Date() - new Date(pregnancy.last_period_date)) / (1000 * 60 * 60 * 24 * 7)) : null
 
@@ -1680,64 +1122,19 @@ function AlertDetailView({ profile, alertId, setView, openPatientDossier }) {
         </div>
       </header>
       <main style={{ padding: '24px 32px', maxWidth: 900, margin: '0 auto' }}>
-        
-        {/* Triage banner */}
-        {tl && (
-          <div style={{ padding: '16px 20px', background: tl.bg, borderRadius: 18, border: `2px solid ${tl.color}30`, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ fontSize: 36 }}>{tl.label.split(' ')[0]}</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 16, fontWeight: 800, color: tl.color, letterSpacing: '0.02em' }}>{tl.label}</div>
-              <div style={{ fontSize: 12, color: '#5D4037', marginTop: 2 }}>Score: {alert.triage_score} · Depuis: {alert.triage_onset || '?'}</div>
-            </div>
-            {weeksPregnant && (
-              <div style={{ padding: '8px 14px', background: '#FFFFFF', borderRadius: 10, textAlign: 'center' }}>
-                <div style={{ fontSize: 18, fontWeight: 800, color: '#2a1810' }}>{weeksPregnant}</div>
-                <div style={{ fontSize: 9, color: '#8B6F5C', fontWeight: 700 }}>SA</div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Patient card */}
+        {tl && (<div style={{ padding: '16px 20px', background: tl.bg, borderRadius: 18, border: `2px solid ${tl.color}30`, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 }}><div style={{ fontSize: 36 }}>{tl.label.split(' ')[0]}</div><div style={{ flex: 1 }}><div style={{ fontSize: 16, fontWeight: 800, color: tl.color }}>{tl.label}</div><div style={{ fontSize: 12, color: '#5D4037', marginTop: 2 }}>Score: {alert.triage_score} · Depuis: {alert.triage_onset || '?'}</div></div>{weeksPregnant && (<div style={{ padding: '8px 14px', background: '#FFFFFF', borderRadius: 10, textAlign: 'center' }}><div style={{ fontSize: 18, fontWeight: 800, color: '#2a1810' }}>{weeksPregnant}</div><div style={{ fontSize: 9, color: '#8B6F5C', fontWeight: 700 }}>SA</div></div>)}</div>)}
         <div style={{ ...cardStyle, border: '2px solid #C44536', background: 'linear-gradient(135deg, #FFE8E2 0%, #FFFFFF 100%)' }}>
           <div style={{ fontSize: 11, color: '#8B2E26', fontWeight: 700, textTransform: 'uppercase' }}>Patiente en urgence</div>
           <div style={{ fontSize: 28, fontFamily: 'Georgia, serif', fontWeight: 700, marginTop: 6 }}>{woman?.first_name} {woman?.last_name}</div>
           <div style={{ display: 'flex', gap: 12, marginTop: 4, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 12, color: '#5D4037', fontFamily: 'monospace' }}>{woman?.ipu}</span>
+            {/* FIX: blood_type depuis pregnancy, pas woman */}
             {pregnancy?.blood_type && <span style={{ fontSize: 11, padding: '2px 8px', background: '#DC262620', color: '#DC2626', borderRadius: 6, fontWeight: 700 }}>🩸 {pregnancy.blood_type}</span>}
             {woman?.phone && <span style={{ fontSize: 12, color: '#5D4037' }}>📱 {woman.phone}</span>}
           </div>
-
-          {/* Symptoms */}
-          {alert.triage_symptom_labels && alert.triage_symptom_labels.length > 0 && (
-            <div style={{ marginTop: 16, padding: 14, background: tl?.bg || '#FEE2E2', borderRadius: 12 }}>
-              <div style={{ fontSize: 11, color: tl?.color || '#8B2E26', fontWeight: 700, textTransform: 'uppercase', marginBottom: 8 }}>Symptômes déclarés</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {alert.triage_symptom_labels.map((s, i) => (
-                  <span key={i} style={{ fontSize: 12, padding: '5px 12px', background: '#FFFFFF', borderRadius: 8, fontWeight: 600, color: '#2a1810', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>{s}</span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* AI Summary for the midwife/doctor */}
-          {alert.triage_ai_summary && (
-            <div style={{ marginTop: 12, padding: 14, background: '#F0F9FF', borderRadius: 12, border: '1px solid #BAE6FD' }}>
-              <div style={{ fontSize: 11, color: '#0369A1', fontWeight: 700, textTransform: 'uppercase', marginBottom: 8 }}>🧠 Notes cliniques IA</div>
-              <pre style={{ fontSize: 12, color: '#2a1810', fontFamily: 'system-ui, sans-serif', whiteSpace: 'pre-wrap', lineHeight: 1.6, margin: 0 }}>{alert.triage_ai_summary}</pre>
-            </div>
-          )}
-
-          {/* Location */}
-          {alert.latitude && (
-            <div style={{ marginTop: 12, padding: 14, background: '#FFFFFF', borderRadius: 12 }}>
-              <div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 700 }}>📍 LOCALISATION</div>
-              <div style={{ fontSize: 14, fontFamily: 'monospace', marginTop: 4, fontWeight: 600 }}>{alert.latitude?.toFixed(6)}, {alert.longitude?.toFixed(6)}</div>
-              <a href={`https://www.google.com/maps?q=${alert.latitude},${alert.longitude}`} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 10, padding: '10px 16px', background: '#2D5F5D', color: '#FAF6F0', borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>📍 Ouvrir dans Maps</a>
-            </div>
-          )}
-
-          {/* Action buttons */}
+          {alert.triage_symptom_labels && alert.triage_symptom_labels.length > 0 && (<div style={{ marginTop: 16, padding: 14, background: tl?.bg || '#FEE2E2', borderRadius: 12 }}><div style={{ fontSize: 11, color: tl?.color || '#8B2E26', fontWeight: 700, textTransform: 'uppercase', marginBottom: 8 }}>Symptômes déclarés</div><div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{alert.triage_symptom_labels.map((s, i) => (<span key={i} style={{ fontSize: 12, padding: '5px 12px', background: '#FFFFFF', borderRadius: 8, fontWeight: 600, color: '#2a1810', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>{s}</span>))}</div></div>)}
+          {alert.triage_ai_summary && (<div style={{ marginTop: 12, padding: 14, background: '#F0F9FF', borderRadius: 12, border: '1px solid #BAE6FD' }}><div style={{ fontSize: 11, color: '#0369A1', fontWeight: 700, textTransform: 'uppercase', marginBottom: 8 }}>🧠 Notes cliniques IA</div><pre style={{ fontSize: 12, color: '#2a1810', fontFamily: 'system-ui, sans-serif', whiteSpace: 'pre-wrap', lineHeight: 1.6, margin: 0 }}>{alert.triage_ai_summary}</pre></div>)}
+          {alert.latitude && (<div style={{ marginTop: 12, padding: 14, background: '#FFFFFF', borderRadius: 12 }}><div style={{ fontSize: 11, color: '#8B6F5C', fontWeight: 700 }}>📍 LOCALISATION</div><div style={{ fontSize: 14, fontFamily: 'monospace', marginTop: 4, fontWeight: 600 }}>{alert.latitude?.toFixed(6)}, {alert.longitude?.toFixed(6)}</div><a href={`https://www.google.com/maps?q=${alert.latitude},${alert.longitude}`} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 10, padding: '10px 16px', background: '#2D5F5D', color: '#FAF6F0', borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>📍 Ouvrir dans Maps</a></div>)}
           <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
             <button onClick={() => openPatientDossier(alert.woman_id)} style={{ flex: 1, padding: 12, background: '#C44536', color: '#FAF6F0', borderRadius: 10, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>📋 Voir le dossier</button>
             {woman?.phone && <a href={`tel:${woman.phone}`} style={{ flex: 1, padding: 12, background: '#1F4341', color: '#FAF6F0', borderRadius: 10, fontWeight: 700, textAlign: 'center', textDecoration: 'none', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📞 Appeler</a>}
@@ -1747,6 +1144,10 @@ function AlertDetailView({ profile, alertId, setView, openPatientDossier }) {
     </div>
   )
 }
+
+// =====================================================
+// STYLES
+// =====================================================
 const loadingStyle = { minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#FAF6F0', fontFamily: 'system-ui, -apple-system, sans-serif' }
 const pageStyle = { minHeight: '100vh', background: '#F5F1EB', fontFamily: 'system-ui, -apple-system, sans-serif' }
 const headerStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 32px', background: '#FFFFFF', borderBottom: '1px solid rgba(42,24,16,0.08)', position: 'sticky', top: 0, zIndex: 10 }
@@ -1766,8 +1167,7 @@ const searchHeroStyle = { padding: 24, borderRadius: 20, background: 'linear-gra
 const patientRowStyle = { display: 'flex', alignItems: 'center', gap: 12, padding: 12, background: '#FAF6F0', borderRadius: 14, border: 'none', cursor: 'pointer', fontFamily: 'inherit', width: '100%' }
 
 if (typeof document !== 'undefined' && !document.getElementById('yaay-pro-animations')) {
-  const style = document.createElement('style')
-  style.id = 'yaay-pro-animations'
+  const style = document.createElement('style'); style.id = 'yaay-pro-animations'
   style.textContent = `@keyframes pulse-alert { 0%, 100% { opacity: 1; } 50% { opacity: 0.85; } }`
   document.head.appendChild(style)
 }
